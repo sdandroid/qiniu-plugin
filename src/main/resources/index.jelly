@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+    This plugin upload is to archive build artifacts to Qiniu.
+</div>
