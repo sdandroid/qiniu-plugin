@@ -1,0 +1,11 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry title="${%IncludeFilesGlob}" field="includeFilesGlob"><f:textbox /></f:entry>
+    <f:advanced>
+        <f:entry title="${%ExcludeFilesGlob}" field="excludeFilesGlob"><f:textbox /></f:entry>
+        <f:entry title="${%DoNotFailIfArchiveNothing}" field="doNotFailIfArchiveNothing"><f:checkbox /></f:entry>
+        <f:entry title="${%ArchiveIfBuildIsSuccessful}" field="archiveIfBuildIsSuccessful"><f:checkbox /></f:entry>
+        <f:entry title="${%UseDefaultExcludes}" field="useDefaultExcludes"><f:checkbox /></f:entry>
+        <f:entry title="${%CaseSensitive}" field="caseSensitive"><f:checkbox /></f:entry>
+    </f:advanced>
+</j:jelly>
