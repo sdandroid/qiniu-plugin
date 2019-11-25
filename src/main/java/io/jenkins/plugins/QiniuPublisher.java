@@ -31,7 +31,10 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
     // TODO: Support infrequent storage
 
     @DataBoundConstructor
-    public QiniuPublisher(@Nonnull String includeFilesGlob, @Nonnull String excludeFilesGlob, boolean doNotFailIfArchiveNothing, boolean archiveIfBuildIsSuccessful, boolean useDefaultExcludes, boolean caseSensitive) {
+    public QiniuPublisher(
+            @Nonnull String includeFilesGlob, @Nonnull String excludeFilesGlob,
+            boolean doNotFailIfArchiveNothing, boolean archiveIfBuildIsSuccessful,
+            boolean useDefaultExcludes, boolean caseSensitive) {
         this.includeFilesGlob = includeFilesGlob;
         this.excludeFilesGlob = excludeFilesGlob;
         this.doNotFailIfArchiveNothing = doNotFailIfArchiveNothing;
@@ -41,7 +44,9 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath filePath, @Nonnull Launcher launcher, @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
+    public void perform(
+            @Nonnull Run<?, ?> run, @Nonnull FilePath filePath,
+            @Nonnull Launcher launcher, @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
         final PrintStream logger = taskListener.getLogger();
         final EnvVars envVars = run.getEnvironment(taskListener);
         logger.println("Uploading to Qiniu");
@@ -51,7 +56,10 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         }
         final QiniuArtifactManager artifactManager = (QiniuArtifactManager) run.pickArtifactManager();
 
-        final ListFiles listFiles = new ListFiles(envVars.expand(this.includeFilesGlob), envVars.expand(this.excludeFilesGlob), this.useDefaultExcludes, this.caseSensitive);
+        final ListFiles listFiles = new ListFiles(
+                envVars.expand(this.includeFilesGlob),
+                envVars.expand(this.excludeFilesGlob),
+                this.useDefaultExcludes, this.caseSensitive);
         final Map<String, String> files = filePath.act(listFiles);
 
         artifactManager.archive(filePath, launcher, BuildListenerAdapter.wrap(taskListener), files);

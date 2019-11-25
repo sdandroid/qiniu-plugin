@@ -94,6 +94,9 @@ public class QiniuArtifactManager extends ArtifactManager {
             return this.standardArtifactManager.root();
         }
         LOG.log(Level.INFO, "QiniuArtifactManager::root()");
-        return new QiniuFile(this.accessKey, this.secretKey, this.bucketName, this.objectNamePrefixWithBuildNumber, this.downloadDomain, this.useHTTPs);
+        final QiniuFileSystem qiniuFileSystem = QiniuFileSystem.create(
+                this.accessKey, this.secretKey, this.bucketName,
+                this.objectNamePrefixWithBuildNumber, this.downloadDomain, this.useHTTPs);
+        return new QiniuFile(qiniuFileSystem, null);
     }
 }

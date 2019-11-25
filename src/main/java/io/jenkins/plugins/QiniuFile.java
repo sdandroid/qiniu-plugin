@@ -1,75 +1,54 @@
 package io.jenkins.plugins;
 
-import com.qiniu.common.QiniuException;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
-import com.qiniu.storage.model.FileInfo;
-import com.qiniu.storage.model.FileListing;
 import com.qiniu.util.Auth;
 import jenkins.util.VirtualFile;
 import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class QiniuFile extends VirtualFile {
     private static final Logger LOG = Logger.getLogger(QiniuFile.class.getName());
 
-    private final String accessKey, secretKey, bucketName, objectName, downloadDomain;
-    private final boolean useHTTPs;
-    private boolean gotMetadata = false;
-    private long fsize, lastModified;
+    private Path objectName;
+    private QiniuFileSystem qiniuFileSystem;
 
-    public QiniuFile(@Nonnull String accessKey, @Nonnull String secretKey, @Nonnull String bucketName,
-                     @Nonnull String objectName, @Nonnull String downloadDomain, boolean useHTTPs) {
-        this.accessKey = accessKey;
-        this.secretKey = secretKey;
-        this.bucketName = bucketName;
+    public QiniuFile(@Nonnull QiniuFileSystem qiniuFileSystem, Path objectName) {
+        this.qiniuFileSystem = qiniuFileSystem;
         this.objectName = objectName;
-        this.downloadDomain = downloadDomain;
-        this.useHTTPs = useHTTPs;
     }
 
     @Nonnull
-    public String getAccessKey() {
-        return this.accessKey;
-    }
-
-    @Nonnull
-    public String getSecretKey() {
-        return this.secretKey;
-    }
-
-    @Nonnull
-    public String getBucketName() {
-        return this.bucketName;
-    }
-
-    @Nonnull
-    public String getObjectName() {
-        return this.objectName;
-    }
-
-    @Nonnull
-    public String getDownloadDomain() {
-        return this.downloadDomain;
-    }
-
-    public boolean isUseHTTPs() {
-        return this.useHTTPs;
+    public Path getPath() {
+        String objectName = "";
+        if (this.objectName != null) {
+            objectName = this.objectName.toString();
+        }
+        Path path = this.qiniuFileSystem.getObjectNamePrefix();
+        if (path != null && objectName != null) {
+            return path.resolve(objectName);
+        } else if (path != null) {
+            return path;
+        } else if (objectName != null) {
+            return FileSystems.getDefault().getPath(objectName);
+        } else {
+            return FileSystems.getDefault().getPath("");
+        }
     }
 
     @Nonnull
     @Override
     public String getName() {
-        LOG.log(Level.INFO, "QiniuFile::{0}::getName()", this.objectName);
-        return new File(this.objectName).getName();
+        LOG.log(Level.INFO, "QiniuFile::{0}::toURI()", this.objectName);
+        return getPath().getFileName().toString();
     }
 
     @Nonnull
@@ -90,45 +69,62 @@ public class QiniuFile extends VirtualFile {
     public URL toExternalURL() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::toExternalURL()", this.objectName);
         String scheme = "http";
-        if (this.useHTTPs) {
+        if (this.qiniuFileSystem.isUseHTTPs()) {
             scheme = "https";
         }
 
-        String objectName = this.objectName;
+        String objectName = this.getPath().toString();
         if (!objectName.startsWith("/")) {
             objectName = "/" + objectName;
         }
 
-        final String url = new URL(scheme, this.downloadDomain, objectName).toString();
-        return new URL(Auth.create(this.accessKey, this.secretKey).privateDownloadUrl(url));
+        final String url = new URL(scheme, this.qiniuFileSystem.getDownloadDomain(), objectName).toString();
+        return new URL(this.getAuth().privateDownloadUrl(url));
     }
 
     @Override
     public VirtualFile getParent() {
         LOG.log(Level.INFO, "QiniuFile::{0}::getParent()", this.objectName);
-        final String parentPath = new File(this.objectName).getParent() + File.separator;
-        return new QiniuFile(this.accessKey, this.secretKey, this.bucketName, parentPath, this.downloadDomain, this.useHTTPs);
+        if (this.objectName != null) {
+            final Path parentPath = this.objectName.getParent();
+            return new QiniuFile(this.qiniuFileSystem, parentPath);
+        } else {
+            return null;
+        }
     }
 
     @Override
     public boolean isDirectory() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::isDirectory()", this.objectName);
-        return this.objectName.endsWith(File.separator);
+        this.qiniuFileSystem.mayThrowIOException();
+        if (this.objectName != null) {
+            return this.qiniuFileSystem.getNodeByPath(this.objectName, false, false).isDirectory();
+        } else {
+            return true;
+        }
     }
 
     @Override
     public boolean isFile() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::isFile()", this.objectName);
-        return !this.isDirectory();
+        this.qiniuFileSystem.mayThrowIOException();
+        if (this.objectName != null) {
+            return this.qiniuFileSystem.getNodeByPath(this.objectName, false, false).isFile();
+        } else {
+            return true;
+        }
     }
 
     @Override
     public boolean exists() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::exists()", this.objectName);
+        this.qiniuFileSystem.mayThrowIOException();
         try {
-            this.fetchMetadata();
+            if (this.objectName != null) {
+                this.qiniuFileSystem.getNodeByPath(this.objectName, false, false);
+            }
             return true;
-        } catch (QiniuException e) {
+        } catch (QiniuFileSystem.InvalidPathError e) {
             return false;
         }
     }
@@ -137,90 +133,34 @@ public class QiniuFile extends VirtualFile {
     @Override
     public VirtualFile[] list() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::list()", this.objectName);
-        final BucketManager bucketManager = getBucketManager();
-        final ArrayList<VirtualFile> listedFiles = new ArrayList<>();
-        String marker = null;
-        String prefix = this.objectName;
-        if (!prefix.endsWith(File.separator)) {
-            prefix += File.separator;
+        this.qiniuFileSystem.mayThrowIOException();
+        QiniuFileSystem.DirectoryNode currentNode = this.qiniuFileSystem.getRootNode();
+        if (this.objectName != null) {
+            currentNode = this.qiniuFileSystem.getDirectoryNodeByPath(this.objectName, false);
         }
-        for (;;) {
-            final FileListing list = bucketManager.listFiles(this.bucketName, prefix, marker, 1000, File.separator);
-            if (list.items != null) {
-                for (FileInfo file : list.items) {
-                    if (!file.key.equals(prefix)) {
-                        listedFiles.add(new QiniuFile(this.accessKey, this.secretKey, this.bucketName, file.key, this.downloadDomain, this.useHTTPs));
-                    }
-                }
+        final Collection<QiniuFileSystem.Node> childrenNodes = currentNode.getChildrenNodes();
+        VirtualFile[] virtualFiles = new VirtualFile[childrenNodes.size()];
+        int i = 0;
+        for (QiniuFileSystem.Node childNode : currentNode.getChildrenNodes()) {
+            Path path;
+            if (this.objectName != null) {
+                path = this.objectName.resolve(childNode.getNodeName());
+            } else {
+                path = FileSystems.getDefault().getPath(childNode.getNodeName());
             }
-            if (list.commonPrefixes != null) {
-                for (String commonPrefix : list.commonPrefixes) {
-                    if (!commonPrefix.equals(prefix)) {
-                        listedFiles.add(new QiniuFile(this.accessKey, this.secretKey, this.bucketName, commonPrefix, this.downloadDomain, this.useHTTPs));
-                    }
-                }
-            }
-            marker = list.marker;
-            if (marker == null || marker.isEmpty()) {
-                break;
-            }
+            virtualFiles[i] = new QiniuFile(this.qiniuFileSystem, path);
+            i++;
         }
-        LOG.log(Level.INFO, "QiniuFile::{0}::list() done: {1} files listed", new Object[]{this.objectName, listedFiles.size()});
-        VirtualFile[] virtualFiles = new VirtualFile[listedFiles.size()];
-        return listedFiles.toArray(virtualFiles);
-    }
-
-    @Nonnull
-    public VirtualFile[] listRecursively() throws IOException {
-        LOG.log(Level.INFO, "QiniuFile::{0}::listRecursively()", this.objectName);
-        final BucketManager bucketManager = getBucketManager();
-        final ArrayList<VirtualFile> listedFiles = new ArrayList<>();
-        String marker = null;
-        String prefix = this.objectName;
-        if (prefix.endsWith(File.separator)) {
-            prefix += File.separator;
-        }
-        for (;;) {
-            final FileListing list = bucketManager.listFiles(this.bucketName, prefix, marker, 1000, null);
-            if (list.items != null) {
-                for (FileInfo file : list.items) {
-                    listedFiles.add(new QiniuFile(this.accessKey, this.secretKey, this.bucketName, file.key, this.downloadDomain, this.useHTTPs));
-                }
-            }
-            marker = list.marker;
-            if (marker == null || marker.isEmpty()) {
-                break;
-            }
-        }
-        LOG.log(Level.INFO, "QiniuFile::{0}::listRecursively() done: {1} files listed", new Object[]{this.objectName, listedFiles.size()});
-        VirtualFile[] virtualFiles = new VirtualFile[listedFiles.size()];
-        return listedFiles.toArray(virtualFiles);
+        return virtualFiles;
     }
 
     public boolean deleteRecursively() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::deleteRecursively()", this.objectName);
-        final BucketManager bucketManager = getBucketManager();
-        final VirtualFile[] files = this.listRecursively();
-        final BucketManager.BatchOperations batch = new BucketManager.BatchOperations();
-
-        if (files.length == 0) {
+        this.qiniuFileSystem.mayThrowIOException();
+        if (this.qiniuFileSystem.getRootNode().getChildrenCount() == 0) {
             return false;
         }
-
-        int counter = 0;
-        for (VirtualFile file : files) {
-            final QiniuFile qiniuFile = (QiniuFile) file;
-            batch.addDeleteOp(qiniuFile.bucketName, qiniuFile.objectName);
-            counter++;
-            if (counter >= 1000) {
-                bucketManager.batch(batch);
-                batch.clearOps();
-            }
-        }
-        if (counter > 0) {
-            bucketManager.batch(batch);
-        }
-        LOG.log(Level.INFO, "QiniuFile::{0}::deleteRecursively() done", this.objectName);
+        this.qiniuFileSystem.deleteAll();
         return true;
     }
 
@@ -228,27 +168,51 @@ public class QiniuFile extends VirtualFile {
     @Override
     public VirtualFile child(@Nonnull String childName) {
         LOG.log(Level.INFO, "QiniuFile::{0}::child({1})", new Object[]{this.objectName, childName});
-        return new QiniuFile(this.accessKey, this.secretKey, this.bucketName, new File(this.objectName, childName).getPath(), this.downloadDomain, this.useHTTPs);
+        Path path;
+        if (this.objectName != null) {
+            path = this.objectName.resolve(childName);
+        } else {
+            path = FileSystems.getDefault().getPath(childName);
+        }
+        return new QiniuFile(this.qiniuFileSystem, path);
     }
 
     @Override
     public long length() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::length()", this.objectName);
-        this.fetchMetadata();
-        return this.fsize;
+        QiniuFileSystem.Node currentNode = this.qiniuFileSystem.getRootNode();
+        if (this.objectName != null) {
+            currentNode = this.qiniuFileSystem.getNodeByPath(this.objectName, false, false);
+        }
+        if (currentNode.isFile()) {
+            return ((QiniuFileSystem.FileNode) currentNode).getMetadata().fsize;
+        } else {
+            return ((QiniuFileSystem.DirectoryNode) currentNode).getChildrenCount();
+        }
     }
 
     @Override
     public long lastModified() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::lastModified()", this.objectName);
-        this.fetchMetadata();
-        return this.lastModified;
+        QiniuFileSystem.Node currentNode = this.qiniuFileSystem.getRootNode();
+        if (this.objectName != null) {
+            currentNode = this.qiniuFileSystem.getNodeByPath(this.objectName, false, false);
+        }
+        if (currentNode.isFile()) {
+            return ((QiniuFileSystem.FileNode) currentNode).getMetadata().putTime / 10000;
+        } else {
+            return 0;
+        }
     }
 
     @Override
     public boolean canRead() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::canRead()", this.objectName);
-        return true;
+        QiniuFileSystem.Node currentNode = this.qiniuFileSystem.getRootNode();
+        if (this.objectName != null) {
+            currentNode = this.qiniuFileSystem.getNodeByPath(this.objectName, false, false);
+        }
+        return currentNode != null;
     }
 
     @Nonnull
@@ -258,15 +222,6 @@ public class QiniuFile extends VirtualFile {
         return this.toExternalURL().openStream();
     }
 
-    private void fetchMetadata() throws IOException {
-        if (!this.gotMetadata && this.isFile()) {
-            final FileInfo metadata = getBucketManager().stat(this.bucketName, this.objectName);
-            this.gotMetadata = true;
-            this.fsize = metadata.fsize;
-            this.lastModified = metadata.putTime / 10000;
-        }
-    }
-
     @Nonnull
     private BucketManager getBucketManager() {
         return new BucketManager(this.getAuth(), this.getConfiguration());
@@ -274,13 +229,23 @@ public class QiniuFile extends VirtualFile {
 
     @Nonnull
     private Auth getAuth() {
-        return Auth.create(this.accessKey, this.secretKey);
+        return Auth.create(this.qiniuFileSystem.getAccessKey(), this.qiniuFileSystem.getSecretKey());
     }
 
     @Nonnull
     private Configuration getConfiguration() {
         final Configuration config = new Configuration();
-        config.useHttpsDomains = this.useHTTPs;
+        config.useHttpsDomains = this.qiniuFileSystem.isUseHTTPs();
         return config;
+    }
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        SerializeUtils.serializePath(out, this.objectName);
+        out.writeObject(this.qiniuFileSystem);
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        this.objectName = SerializeUtils.deserializePath(in);
+        this.qiniuFileSystem = (QiniuFileSystem) in.readObject();
     }
 }
