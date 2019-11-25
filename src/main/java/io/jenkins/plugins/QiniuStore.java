@@ -33,11 +33,6 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
     public QiniuStore() {
     }
 
-    @Override
-    public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) super.getDescriptor();
-    }
-
     public static QiniuArtifactManagerFactory getQiniuArtifactManagerFactory() {
         return Global.getQiniuArtifactManagerFactory();
     }

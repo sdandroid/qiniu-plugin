@@ -110,11 +110,6 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         this.caseSensitive = caseSensitive;
     }
 
-    @Override
-    public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) super.getDescriptor();
-    }
-
     @Symbol("Qiniu")
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
