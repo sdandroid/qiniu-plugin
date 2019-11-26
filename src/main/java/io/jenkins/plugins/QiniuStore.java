@@ -55,6 +55,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
                 Global.qiniuArtifactManagerFactory.setObjectNamePrefix(factory.getObjectNamePrefix());
                 Global.qiniuArtifactManagerFactory.setDownloadDomain(factory.getDownloadDomain());
                 Global.qiniuArtifactManagerFactory.setUseHTTPs(factory.isUseHTTPs());
+                Global.qiniuArtifactManagerFactory.setInfrequentStorage(factory.isInfrequentStorage());
             } else {
                 Global.qiniuArtifactManagerFactory = factory;
             }
@@ -83,7 +84,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
         private String rsDomain = Configuration.defaultRsHost,
                        ucDomain = Configuration.defaultUcHost,
                        apiDomain = Configuration.defaultApiHost;
-        private boolean useHTTPs = false;
+        private boolean useHTTPs = false, infrequentStorage = true;
 
         public DescriptorImpl() {
             super(QiniuStore.class);
@@ -102,6 +103,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
             this.ucDomain = json.getString("ucDomain");
             this.apiDomain = json.getString("apiDomain");
             this.useHTTPs = json.getBoolean("useHTTPs");
+            this.infrequentStorage = json.getBoolean("infrequentStorage");
             autoSetBaseURL();
 
             final Throwable err = this.checkAccessKeySecretKeyAndBucketName();
@@ -156,7 +158,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
 
             final QiniuArtifactManagerFactory factory = new QiniuArtifactManagerFactory(
                     this.accessKey, this.secretKey, this.bucketName, this.objectNamePrefix,
-                    this.downloadDomain, this.useHTTPs);
+                    this.downloadDomain, this.useHTTPs, this.infrequentStorage);
             Global.setQiniuArtifactManagerFactory(factory);
         }
 
@@ -288,6 +290,22 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
 
         public boolean isUseHTTPs() {
             return this.useHTTPs;
+        }
+
+        public String getRsDomain() {
+            return this.rsDomain;
+        }
+
+        public String getUcDomain() {
+            return this.ucDomain;
+        }
+
+        public String getApiDomain() {
+            return this.apiDomain;
+        }
+
+        public boolean isInfrequentStorage() {
+            return this.infrequentStorage;
         }
 
         @Nonnull

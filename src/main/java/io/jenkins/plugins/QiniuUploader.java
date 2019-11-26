@@ -3,6 +3,7 @@ package io.jenkins.plugins;
 import com.qiniu.storage.Configuration;
 import com.qiniu.storage.UploadManager;
 import com.qiniu.util.Auth;
+import com.qiniu.util.StringMap;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
@@ -18,17 +19,18 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     private static final Logger LOG = Logger.getLogger(QiniuUploader.class.getName());
 
     private final String accessKey, secretKey, bucketName, objectNamePrefix;
-    private final boolean useHTTPs;
+    private final boolean useHTTPs, infrequentStorage;
     private final Map<String, String> artifactURLs;
     private final TaskListener listener;
 
     QiniuUploader(@Nonnull String accessKey, @Nonnull String secretKey, @Nonnull String bucketName,
-                  @Nonnull boolean useHTTPs, @Nonnull Map<String, String> artifactURLs,
+                  boolean useHTTPs, boolean infrequentStorage, @Nonnull Map<String, String> artifactURLs,
                   @Nonnull String objectNamePrefix, @Nonnull TaskListener listener) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.bucketName = bucketName;
         this.useHTTPs = useHTTPs;
+        this.infrequentStorage = infrequentStorage;
         this.artifactURLs = artifactURLs;
         this.objectNamePrefix = objectNamePrefix;
         this.listener = listener;
@@ -41,7 +43,8 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
         }
 
         final UploadManager uploadManager = new UploadManager(this.getConfiguration());
-        final String uploadToken = Auth.create(this.accessKey, this.secretKey).uploadToken(this.bucketName, null, 24 * 3600 * 7, null);
+        final Auth auth = Auth.create(this.accessKey, this.secretKey);
+        final String uploadToken = auth.uploadToken(this.bucketName, null, 24 * 3600, new StringMap().put("fileType", 1));
 
         try {
             for (Map.Entry<String, String> entry : this.artifactURLs.entrySet()) {

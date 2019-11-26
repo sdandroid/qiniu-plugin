@@ -5,6 +5,7 @@
         <f:entry title="${%QiniuSecretKey}" field="secretKey" description="${%QiniuSecretKeyDescription}"><f:password /></f:entry>
         <f:entry title="${%BucketName}" field="bucketName"><f:textbox /></f:entry>
         <f:advanced>
+            <f:entry title="${%InfrequentStorage}" field="infrequentStorage"><f:checkbox /></f:entry>
             <f:entry title="${%ObjectNamePrefix}" field="objectNamePrefix"><f:textbox /></f:entry>
             <f:entry title="${%DownloadDomain}" field="downloadDomain"><f:textbox /></f:entry>
             <f:entry title="${%UcDomain}" field="ucDomain"><f:textbox /></f:entry>

@@ -15,18 +15,19 @@ import java.util.logging.Logger;
 public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
     private static final Logger LOG = Logger.getLogger(QiniuArtifactManagerFactory.class.getName());
     private String accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain;
-    private boolean useHTTPs;
+    private boolean useHTTPs, infrequentStorage;
 
     @DataBoundConstructor
     public QiniuArtifactManagerFactory(@Nonnull String accessKey, @Nonnull String secretKey, @Nonnull String bucketName,
                                        @Nonnull String objectNamePrefix,
-                                       @Nonnull String downloadDomain, boolean useHTTPs) {
+                                       @Nonnull String downloadDomain, boolean useHTTPs, boolean infrequentStorage) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.bucketName = bucketName;
         this.objectNamePrefix = objectNamePrefix;
         this.downloadDomain = downloadDomain;
         this.useHTTPs = useHTTPs;
+        this.infrequentStorage = infrequentStorage;
     }
 
     @Override
@@ -36,7 +37,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                 LOG.log(Level.INFO, "QiniuArtifactManagerFactory creates QiniuArtifactManager");
                 return new QiniuArtifactManager(run,
                         this.accessKey, this.secretKey, this.bucketName, this.objectNamePrefix,
-                        this.downloadDomain, this.useHTTPs);
+                        this.downloadDomain, this.useHTTPs, this.infrequentStorage);
             }
         }
         LOG.log(Level.INFO, "QiniuArtifactManagerFactory creates nothing, which means it won't decide which ArtifactManager will be created");
@@ -77,27 +78,35 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         return this.useHTTPs;
     }
 
-    public void setAccessKey(String accessKey) {
+    public boolean isInfrequentStorage() {
+        return this.infrequentStorage;
+    }
+
+    public void setAccessKey(final String accessKey) {
         this.accessKey = accessKey;
     }
 
-    public void setSecretKey(String secretKey) {
+    public void setSecretKey(final String secretKey) {
         this.secretKey = secretKey;
     }
 
-    public void setBucketName(String bucketName) {
+    public void setBucketName(final String bucketName) {
         this.bucketName = bucketName;
     }
 
-    public void setObjectNamePrefix(String objectNamePrefix) {
+    public void setObjectNamePrefix(final String objectNamePrefix) {
         this.objectNamePrefix = objectNamePrefix;
     }
 
-    public void setDownloadDomain(String downloadDomain) {
+    public void setDownloadDomain(final String downloadDomain) {
         this.downloadDomain = downloadDomain;
     }
 
-    public void setUseHTTPs(boolean useHTTPs) {
+    public void setUseHTTPs(final boolean useHTTPs) {
         this.useHTTPs = useHTTPs;
+    }
+
+    public void setInfrequentStorage(final boolean infrequentStorage) {
+        this.infrequentStorage = infrequentStorage;
     }
 }

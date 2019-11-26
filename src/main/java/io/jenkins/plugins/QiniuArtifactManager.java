@@ -21,19 +21,20 @@ public class QiniuArtifactManager extends ArtifactManager {
     private static final Logger LOG = Logger.getLogger(QiniuArtifactManager.class.getName());
 
     private final String accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain;
-    private final boolean useHTTPs;
+    private final boolean useHTTPs, infrequentStorage;
     private String objectNamePrefixWithBuildNumber;
     private StandardArtifactManager standardArtifactManager = null;
 
     public QiniuArtifactManager(@Nonnull Run<?, ?> run, @Nonnull String accessKey, @Nonnull String secretKey,
                                 @Nonnull String bucketName, @Nonnull String objectNamePrefix,
-                                @Nonnull String downloadDomain, boolean useHTTPs) {
+                                @Nonnull String downloadDomain, boolean useHTTPs, boolean infrequentStorage) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.bucketName = bucketName;
         this.objectNamePrefix = objectNamePrefix;
         this.downloadDomain = downloadDomain;
         this.useHTTPs = useHTTPs;
+        this.infrequentStorage = infrequentStorage;
         this.onLoad(run);
     }
 
@@ -72,7 +73,7 @@ public class QiniuArtifactManager extends ArtifactManager {
             final String filePath = entry.getValue();
             artifacts.put(objectNameWithoutPrefix, filePath);
         }
-        workspace.act(new QiniuUploader(this.accessKey, this.secretKey, this.bucketName, this.useHTTPs, artifacts, this.objectNamePrefixWithBuildNumber, buildListener));
+        workspace.act(new QiniuUploader(this.accessKey, this.secretKey, this.bucketName, this.useHTTPs, this.infrequentStorage, artifacts, this.objectNamePrefixWithBuildNumber, buildListener));
     }
 
     @Override

@@ -28,19 +28,17 @@ import java.util.logging.Logger;
 public class QiniuPublisher extends Recorder implements SimpleBuildStep {
     private static final Logger LOG = Logger.getLogger(QiniuPublisher.class.getName());
     private String includeFilesGlob, excludeFilesGlob;
-    private boolean doNotFailIfArchiveNothing = false, archiveIfBuildIsSuccessful = true, useDefaultExcludes = true, caseSensitive = true;
-
-    // TODO: Support infrequent storage
+    private boolean allowEmptyArchive = false, onlyIfSuccessful = true, useDefaultExcludes = true, caseSensitive = true;
 
     @DataBoundConstructor
     public QiniuPublisher(
             @Nonnull String includeFilesGlob, @Nonnull String excludeFilesGlob,
-            boolean doNotFailIfArchiveNothing, boolean archiveIfBuildIsSuccessful,
+            boolean allowEmptyArchive, boolean onlyIfSuccessful,
             boolean useDefaultExcludes, boolean caseSensitive) {
         this.includeFilesGlob = includeFilesGlob;
         this.excludeFilesGlob = excludeFilesGlob;
-        this.doNotFailIfArchiveNothing = doNotFailIfArchiveNothing;
-        this.archiveIfBuildIsSuccessful = archiveIfBuildIsSuccessful;
+        this.allowEmptyArchive = allowEmptyArchive;
+        this.onlyIfSuccessful = onlyIfSuccessful;
         this.useDefaultExcludes = useDefaultExcludes;
         this.caseSensitive = caseSensitive;
     }
@@ -59,7 +57,7 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
 
         final Result result = run.getResult();
 
-        if (this.archiveIfBuildIsSuccessful && result != null && result.isWorseThan(Result.UNSTABLE)) {
+        if (this.onlyIfSuccessful && result != null && result.isWorseThan(Result.UNSTABLE)) {
             logger.println(hudson.tasks.Messages.ArtifactArchiver_SkipBecauseOnlyIfSuccessful());
             return;
         }
@@ -83,7 +81,7 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
                 } catch (Exception e) {
                     Functions.printStackTrace(e, logger);
                 }
-                if (this.doNotFailIfArchiveNothing) {
+                if (this.allowEmptyArchive) {
                     logger.println(hudson.tasks.Messages.ArtifactArchiver_NoMatchFound(this.includeFilesGlob));
                 } else {
                     throw new AbortException(hudson.tasks.Messages.ArtifactArchiver_NoMatchFound(this.includeFilesGlob));
@@ -113,20 +111,20 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         this.excludeFilesGlob = excludeFilesGlob;
     }
 
-    public boolean isDoNotFailIfArchiveNothing() {
-        return this.doNotFailIfArchiveNothing;
+    public boolean isAllowEmptyArchive() {
+        return this.allowEmptyArchive;
     }
 
-    public void setDoNotFailIfArchiveNothing(boolean doNotFailIfArchiveNothing) {
-        this.doNotFailIfArchiveNothing = doNotFailIfArchiveNothing;
+    public void setAllowEmptyArchive(boolean allowEmptyArchive) {
+        this.allowEmptyArchive = allowEmptyArchive;
     }
 
-    public boolean isArchiveIfBuildIsSuccessful() {
-        return this.archiveIfBuildIsSuccessful;
+    public boolean isOnlyIfSuccessful() {
+        return this.onlyIfSuccessful;
     }
 
-    public void setArchiveIfBuildIsSuccessful(boolean archiveIfBuildIsSuccessful) {
-        this.archiveIfBuildIsSuccessful = archiveIfBuildIsSuccessful;
+    public void setOnlyIfSuccessful(boolean onlyIfSuccessful) {
+        this.onlyIfSuccessful = onlyIfSuccessful;
     }
 
     public boolean isUseDefaultExcludes() {
