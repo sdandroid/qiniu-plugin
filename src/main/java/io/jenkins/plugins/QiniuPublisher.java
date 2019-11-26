@@ -1,10 +1,13 @@
 package io.jenkins.plugins;
 
+import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.Functions;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
@@ -17,7 +20,6 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
@@ -49,12 +51,19 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
             @Nonnull Launcher launcher, @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
         final PrintStream logger = taskListener.getLogger();
         final EnvVars envVars = run.getEnvironment(taskListener);
-        logger.println("Uploading to Qiniu");
 
         if (QiniuStore.getQiniuArtifactManagerFactory() == null) {
-            throw new RuntimeException("You may not configured Qiniu Jenkins plugin");
+            throw new AbortException(Messages.QiniuPublisher_NotConfigured());
         }
         final QiniuArtifactManager artifactManager = (QiniuArtifactManager) run.pickArtifactManager();
+
+        final Result result = run.getResult();
+
+        if (this.archiveIfBuildIsSuccessful && result != null && result.isWorseThan(Result.UNSTABLE)) {
+            logger.println(hudson.tasks.Messages.ArtifactArchiver_SkipBecauseOnlyIfSuccessful());
+            return;
+        }
+        logger.println(Messages.QiniuPublisher_ARCHIVING_ARTIFACTS());
 
         final ListFiles listFiles = new ListFiles(
                 envVars.expand(this.includeFilesGlob),
@@ -62,7 +71,25 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
                 this.useDefaultExcludes, this.caseSensitive);
         final Map<String, String> files = filePath.act(listFiles);
 
-        artifactManager.archive(filePath, launcher, BuildListenerAdapter.wrap(taskListener), files);
+        if (!files.isEmpty()) {
+            artifactManager.archive(filePath, launcher, BuildListenerAdapter.wrap(taskListener), files);
+        } else {
+            if (result == null || result.isBetterOrEqualTo(Result.UNSTABLE)) {
+                try {
+                    String msg = filePath.validateAntFileMask(this.includeFilesGlob, FilePath.VALIDATE_ANT_FILE_MASK_BOUND, this.caseSensitive);
+                    if (msg != null) {
+                        logger.println(msg);
+                    }
+                } catch (Exception e) {
+                    Functions.printStackTrace(e, logger);
+                }
+                if (this.doNotFailIfArchiveNothing) {
+                    logger.println(hudson.tasks.Messages.ArtifactArchiver_NoMatchFound(this.includeFilesGlob));
+                } else {
+                    throw new AbortException(hudson.tasks.Messages.ArtifactArchiver_NoMatchFound(this.includeFilesGlob));
+                }
+            }
+        }
     }
 
     @Override
