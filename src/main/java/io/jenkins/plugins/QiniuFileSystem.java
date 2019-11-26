@@ -388,6 +388,7 @@ class QiniuFileSystem implements Serializable {
         return this.bucketName;
     }
 
+    @CheckForNull
     public Path getObjectNamePrefix() {
         return this.objectNamePrefix;
     }
