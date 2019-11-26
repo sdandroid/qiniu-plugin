@@ -229,7 +229,7 @@ public class QiniuFile extends VirtualFile {
 
     @Nonnull
     private Auth getAuth() {
-        return Auth.create(this.qiniuFileSystem.getAccessKey(), this.qiniuFileSystem.getSecretKey());
+        return Auth.create(this.qiniuFileSystem.getAccessKey(), this.qiniuFileSystem.getSecretKey().getPlainText());
     }
 
     @Nonnull

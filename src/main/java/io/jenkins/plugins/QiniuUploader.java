@@ -6,6 +6,7 @@ import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
+import hudson.util.Secret;
 import jenkins.MasterToSlaveFileCallable;
 
 import javax.annotation.Nonnull;
@@ -18,12 +19,13 @@ import java.util.logging.Logger;
 class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     private static final Logger LOG = Logger.getLogger(QiniuUploader.class.getName());
 
-    private final String accessKey, secretKey, bucketName, objectNamePrefix;
+    private final String accessKey, bucketName, objectNamePrefix;
+    private final Secret secretKey;
     private final boolean useHTTPs, infrequentStorage;
     private final Map<String, String> artifactURLs;
     private final TaskListener listener;
 
-    QiniuUploader(@Nonnull String accessKey, @Nonnull String secretKey, @Nonnull String bucketName,
+    QiniuUploader(@Nonnull String accessKey, @Nonnull Secret secretKey, @Nonnull String bucketName,
                   boolean useHTTPs, boolean infrequentStorage, @Nonnull Map<String, String> artifactURLs,
                   @Nonnull String objectNamePrefix, @Nonnull TaskListener listener) {
         this.accessKey = accessKey;
@@ -43,7 +45,7 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
         }
 
         final UploadManager uploadManager = new UploadManager(this.getConfiguration());
-        final Auth auth = Auth.create(this.accessKey, this.secretKey);
+        final Auth auth = Auth.create(this.accessKey, this.secretKey.getPlainText());
         final String uploadToken = auth.uploadToken(this.bucketName, null, 24 * 3600, new StringMap().put("fileType", 1));
 
         try {

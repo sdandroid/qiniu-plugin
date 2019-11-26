@@ -52,13 +52,16 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
 
         if (QiniuStore.getQiniuArtifactManagerFactory() == null) {
             throw new AbortException(Messages.QiniuPublisher_NotConfigured());
+        } else if (this.includeFilesGlob.length() == 0) {
+            throw new AbortException(Messages.QiniuPublisher_NoIncludes());
         }
+
         final QiniuArtifactManager artifactManager = (QiniuArtifactManager) run.pickArtifactManager();
 
         final Result result = run.getResult();
 
         if (this.onlyIfSuccessful && result != null && result.isWorseThan(Result.UNSTABLE)) {
-            logger.println(hudson.tasks.Messages.ArtifactArchiver_SkipBecauseOnlyIfSuccessful());
+            logger.println(Messages.QiniuPublisher_SkipBecauseOnlyIfSuccessful());
             return;
         }
         logger.println(Messages.QiniuPublisher_ARCHIVING_ARTIFACTS());
@@ -82,9 +85,9 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
                     Functions.printStackTrace(e, logger);
                 }
                 if (this.allowEmptyArchive) {
-                    logger.println(hudson.tasks.Messages.ArtifactArchiver_NoMatchFound(this.includeFilesGlob));
+                    logger.println(Messages.QiniuPublisher_NoMatchFound(this.includeFilesGlob));
                 } else {
-                    throw new AbortException(hudson.tasks.Messages.ArtifactArchiver_NoMatchFound(this.includeFilesGlob));
+                    throw new AbortException(Messages.QiniuPublisher_NoMatchFound(this.includeFilesGlob));
                 }
             }
         }

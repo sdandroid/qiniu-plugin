@@ -5,6 +5,7 @@ import com.qiniu.storage.Configuration;
 import com.qiniu.storage.model.FileInfo;
 import com.qiniu.storage.model.FileListing;
 import com.qiniu.util.Auth;
+import hudson.util.Secret;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -19,13 +20,14 @@ import java.util.regex.Pattern;
 class QiniuFileSystem implements Serializable {
     private static final Logger LOG = Logger.getLogger(QiniuFileSystem.class.getName());
 
-    private String accessKey, secretKey, bucketName, downloadDomain;
+    private String accessKey, bucketName, downloadDomain;
+    private Secret secretKey;
     private Path objectNamePrefix;
     private boolean useHTTPs;
     private DirectoryNode rootNode;
     private IOException ioException;
 
-    QiniuFileSystem(@Nonnull String accessKey, @Nonnull String secretKey, @Nonnull String bucketName,
+    QiniuFileSystem(@Nonnull String accessKey, @Nonnull Secret secretKey, @Nonnull String bucketName,
                     @Nonnull Path objectNamePrefix, @Nonnull String downloadDomain, boolean useHTTPs) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
@@ -37,7 +39,7 @@ class QiniuFileSystem implements Serializable {
         initNodes();
     }
 
-    QiniuFileSystem(@Nonnull String accessKey, @Nonnull String secretKey, @Nonnull String bucketName,
+    QiniuFileSystem(@Nonnull String accessKey, @Nonnull Secret secretKey, @Nonnull String bucketName,
                     @Nonnull String downloadDomain, boolean useHTTPs, @Nonnull IOException ioException) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
@@ -49,7 +51,7 @@ class QiniuFileSystem implements Serializable {
         this.ioException = ioException;
     }
 
-    static QiniuFileSystem create(@Nonnull String accessKey, @Nonnull String secretKey, @Nonnull String bucketName,
+    static QiniuFileSystem create(@Nonnull String accessKey, @Nonnull Secret secretKey, @Nonnull String bucketName,
                                   @Nonnull String objectNamePrefix, @Nonnull String downloadDomain, boolean useHTTPs) {
         try {
             return new QiniuFileSystem(accessKey, secretKey, bucketName, toPath(objectNamePrefix), downloadDomain, useHTTPs);
@@ -348,7 +350,7 @@ class QiniuFileSystem implements Serializable {
 
     @Nonnull
     private Auth getAuth() {
-        return Auth.create(this.accessKey, this.secretKey);
+        return Auth.create(this.accessKey, this.secretKey.getPlainText());
     }
 
     @Nonnull
@@ -377,7 +379,7 @@ class QiniuFileSystem implements Serializable {
     }
 
     @Nonnull
-    public String getSecretKey() {
+    public Secret getSecretKey() {
         return this.secretKey;
     }
 
@@ -421,7 +423,7 @@ class QiniuFileSystem implements Serializable {
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         this.accessKey = (String) in.readObject();
-        this.secretKey = (String) in.readObject();
+        this.secretKey = (Secret) in.readObject();
         this.bucketName = (String) in.readObject();
         this.downloadDomain = (String) in.readObject();
         this.objectNamePrefix = SerializeUtils.deserializePath(in);

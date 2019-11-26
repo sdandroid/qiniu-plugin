@@ -9,6 +9,7 @@ import hudson.ExtensionPoint;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
 import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.model.ArtifactManagerFactory;
 import net.sf.json.JSONObject;
@@ -80,7 +81,8 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
     @Symbol("Qiniu")
     @Extension
     public static final class DescriptorImpl extends Descriptor<QiniuStore> {
-        private String accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain;
+        private String accessKey, bucketName, objectNamePrefix, downloadDomain;
+        private Secret secretKey;
         private String rsDomain = Configuration.defaultRsHost,
                        ucDomain = Configuration.defaultUcHost,
                        apiDomain = Configuration.defaultApiHost;
@@ -94,16 +96,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-            this.accessKey = json.getString("accessKey");
-            this.secretKey = json.getString("secretKey");
-            this.bucketName = json.getString("bucketName");
-            this.objectNamePrefix = json.getString("objectNamePrefix");
-            this.downloadDomain = json.getString("downloadDomain");
-            this.rsDomain = json.getString("rsDomain");
-            this.ucDomain = json.getString("ucDomain");
-            this.apiDomain = json.getString("apiDomain");
-            this.useHTTPs = json.getBoolean("useHTTPs");
-            this.infrequentStorage = json.getBoolean("infrequentStorage");
+            req.bindJSON(this, json);
             autoSetBaseURL();
 
             final Throwable err = this.checkAccessKeySecretKeyAndBucketName();
@@ -135,7 +128,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
             }
 
             if (this.accessKey == null || this.accessKey.isEmpty() ||
-                    this.secretKey == null || this.secretKey.isEmpty() ||
+                    this.secretKey == null || this.secretKey.getPlainText().isEmpty() ||
                     this.bucketName == null || this.bucketName.isEmpty()) {
                 return;
             }
@@ -175,8 +168,8 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
             }
         }
 
-        public FormValidation doCheckSecretKey(@QueryParameter String secretKey) throws IOException, ServletException {
-            if (secretKey.isEmpty()) {
+        public FormValidation doCheckSecretKey(@QueryParameter Secret secretKey) throws IOException, ServletException {
+            if (secretKey.getPlainText().isEmpty()) {
                 return FormValidation.error(Messages.QiniuStore_DescriptorImpl_errors_secretKeyIsEmpty());
             }
             this.secretKey = secretKey;
@@ -256,7 +249,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
 
         private Throwable checkAccessKeySecretKeyAndBucketName() {
             if (this.accessKey != null && !this.accessKey.isEmpty() &&
-                    this.secretKey != null && !this.secretKey.isEmpty() &&
+                    this.secretKey != null && !this.secretKey.getPlainText().isEmpty() &&
                     this.bucketName != null && !this.bucketName.isEmpty()) {
                 try {
                     this.getBucketManager().getBucketInfo(this.bucketName);
@@ -269,7 +262,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
 
         private boolean checkDownloadDomain() {
             if (this.accessKey != null && !this.accessKey.isEmpty() &&
-                    this.secretKey != null && !this.secretKey.isEmpty() &&
+                    this.secretKey != null && !this.secretKey.getPlainText().isEmpty() &&
                     this.bucketName != null && !this.bucketName.isEmpty() &&
                     (this.downloadDomain == null || this.downloadDomain.isEmpty())) {
                 try {
@@ -292,7 +285,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
             return this.accessKey;
         }
 
-        public String getSecretKey() {
+        public Secret getSecretKey() {
             return this.secretKey;
         }
 
@@ -335,7 +328,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
 
         @Nonnull
         private Auth getAuth() {
-            return Auth.create(this.accessKey, this.secretKey);
+            return Auth.create(this.accessKey, this.secretKey.getPlainText());
         }
 
         @Nonnull

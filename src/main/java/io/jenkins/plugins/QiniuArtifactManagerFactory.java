@@ -3,6 +3,7 @@ package io.jenkins.plugins;
 import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.tasks.Publisher;
+import hudson.util.Secret;
 import jenkins.model.ArtifactManager;
 import jenkins.model.ArtifactManagerFactory;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -14,11 +15,12 @@ import java.util.logging.Logger;
 
 public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
     private static final Logger LOG = Logger.getLogger(QiniuArtifactManagerFactory.class.getName());
-    private String accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain;
+    private String accessKey, bucketName, objectNamePrefix, downloadDomain;
+    private Secret secretKey;
     private boolean useHTTPs, infrequentStorage;
 
     @DataBoundConstructor
-    public QiniuArtifactManagerFactory(@Nonnull String accessKey, @Nonnull String secretKey, @Nonnull String bucketName,
+    public QiniuArtifactManagerFactory(@Nonnull String accessKey, @Nonnull Secret secretKey, @Nonnull String bucketName,
                                        @Nonnull String objectNamePrefix,
                                        @Nonnull String downloadDomain, boolean useHTTPs, boolean infrequentStorage) {
         this.accessKey = accessKey;
@@ -58,7 +60,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         return this.accessKey;
     }
 
-    public String getSecretKey() {
+    public Secret getSecretKey() {
         return this.secretKey;
     }
 
@@ -86,7 +88,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         this.accessKey = accessKey;
     }
 
-    public void setSecretKey(final String secretKey) {
+    public void setSecretKey(final Secret secretKey) {
         this.secretKey = secretKey;
     }
 

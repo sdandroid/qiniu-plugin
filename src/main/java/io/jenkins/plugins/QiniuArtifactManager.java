@@ -5,6 +5,7 @@ import hudson.Launcher;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Run;
+import hudson.util.Secret;
 import jenkins.model.ArtifactManager;
 import jenkins.model.StandardArtifactManager;
 import jenkins.util.VirtualFile;
@@ -20,12 +21,13 @@ import java.util.logging.Logger;
 public class QiniuArtifactManager extends ArtifactManager {
     private static final Logger LOG = Logger.getLogger(QiniuArtifactManager.class.getName());
 
-    private final String accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain;
+    private final String accessKey, bucketName, objectNamePrefix, downloadDomain;
+    private final Secret secretKey;
     private final boolean useHTTPs, infrequentStorage;
     private String objectNamePrefixWithBuildNumber;
     private StandardArtifactManager standardArtifactManager = null;
 
-    public QiniuArtifactManager(@Nonnull Run<?, ?> run, @Nonnull String accessKey, @Nonnull String secretKey,
+    public QiniuArtifactManager(@Nonnull Run<?, ?> run, @Nonnull String accessKey, @Nonnull Secret secretKey,
                                 @Nonnull String bucketName, @Nonnull String objectNamePrefix,
                                 @Nonnull String downloadDomain, boolean useHTTPs, boolean infrequentStorage) {
         this.accessKey = accessKey;
