@@ -43,6 +43,10 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         this.caseSensitive = caseSensitive;
     }
 
+    public QiniuPublisher(@Nonnull String includeFilesGlob) {
+        this(includeFilesGlob, "", false, true, true, true);
+    }
+
     @Override
     public void perform(
             @Nonnull Run<?, ?> run, @Nonnull FilePath filePath,
@@ -146,7 +150,7 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         this.caseSensitive = caseSensitive;
     }
 
-    @Symbol("Qiniu")
+    @Symbol("archiveArtifactsToQiniu")
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
         public DescriptorImpl() {

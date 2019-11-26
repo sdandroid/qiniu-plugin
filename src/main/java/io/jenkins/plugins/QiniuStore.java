@@ -78,7 +78,7 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
 
     }
 
-    @Symbol("Qiniu")
+    @Symbol("archiveArtifactsToQiniu")
     @Extension
     public static final class DescriptorImpl extends Descriptor<QiniuStore> {
         private String accessKey, bucketName, objectNamePrefix, downloadDomain;

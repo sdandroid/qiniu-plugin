@@ -4,6 +4,8 @@ import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
 import com.qiniu.util.Auth;
 import jenkins.util.VirtualFile;
+
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.*;
 import java.net.URI;
@@ -33,14 +35,10 @@ public class QiniuFile extends VirtualFile {
             objectName = this.objectName.toString();
         }
         Path path = this.qiniuFileSystem.getObjectNamePrefix();
-        if (path != null && objectName != null) {
+        if (path != null) {
             return path.resolve(objectName);
-        } else if (path != null) {
-            return path;
-        } else if (objectName != null) {
-            return FileSystems.getDefault().getPath(objectName);
         } else {
-            return FileSystems.getDefault().getPath("");
+            return FileSystems.getDefault().getPath(objectName);
         }
     }
 
@@ -48,7 +46,12 @@ public class QiniuFile extends VirtualFile {
     @Override
     public String getName() {
         LOG.log(Level.INFO, "QiniuFile::{0}::toURI()", this.objectName);
-        return getPath().getFileName().toString();
+        final Path path = getPath().getFileName();
+        if (path != null) {
+            return path.toString();
+        } else {
+            return "";
+        }
     }
 
     @Nonnull
@@ -82,6 +85,7 @@ public class QiniuFile extends VirtualFile {
         return new URL(this.getAuth().privateDownloadUrl(url));
     }
 
+    @CheckForNull
     @Override
     public VirtualFile getParent() {
         LOG.log(Level.INFO, "QiniuFile::{0}::getParent()", this.objectName);
@@ -98,7 +102,12 @@ public class QiniuFile extends VirtualFile {
         LOG.log(Level.INFO, "QiniuFile::{0}::isDirectory()", this.objectName);
         this.qiniuFileSystem.mayThrowIOException();
         if (this.objectName != null) {
-            return this.qiniuFileSystem.getNodeByPath(this.objectName, false, false).isDirectory();
+            final QiniuFileSystem.Node node = this.qiniuFileSystem.getNodeByPath(this.objectName, false, false);
+            if (node != null) {
+                return node.isDirectory();
+            } else {
+                return false;
+            }
         } else {
             return true;
         }
@@ -109,7 +118,12 @@ public class QiniuFile extends VirtualFile {
         LOG.log(Level.INFO, "QiniuFile::{0}::isFile()", this.objectName);
         this.qiniuFileSystem.mayThrowIOException();
         if (this.objectName != null) {
-            return this.qiniuFileSystem.getNodeByPath(this.objectName, false, false).isFile();
+            final QiniuFileSystem.Node node = this.qiniuFileSystem.getNodeByPath(this.objectName, false, false);
+            if (node != null) {
+                return node.isFile();
+            } else {
+                return false;
+            }
         } else {
             return true;
         }
@@ -184,7 +198,9 @@ public class QiniuFile extends VirtualFile {
         if (this.objectName != null) {
             currentNode = this.qiniuFileSystem.getNodeByPath(this.objectName, false, false);
         }
-        if (currentNode.isFile()) {
+        if (currentNode == null) {
+            return 0;
+        } else if (currentNode.isFile()) {
             return ((QiniuFileSystem.FileNode) currentNode).getMetadata().fsize;
         } else {
             return ((QiniuFileSystem.DirectoryNode) currentNode).getChildrenCount();
@@ -198,7 +214,7 @@ public class QiniuFile extends VirtualFile {
         if (this.objectName != null) {
             currentNode = this.qiniuFileSystem.getNodeByPath(this.objectName, false, false);
         }
-        if (currentNode.isFile()) {
+        if (currentNode != null && currentNode.isFile()) {
             return ((QiniuFileSystem.FileNode) currentNode).getMetadata().putTime / 10000;
         } else {
             return 0;
