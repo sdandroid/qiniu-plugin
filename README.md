@@ -15,6 +15,11 @@ cd qiniu-jenkins-plugin
 mvn -Djenkins.version=2.164 -Duse-jenkins-bom package
 ```
 
+## 安装依赖
+
+- OpenJDK 1.8
+- Jenkins 1.164
+
 ## 使用插件
 
 ### 全局配置
