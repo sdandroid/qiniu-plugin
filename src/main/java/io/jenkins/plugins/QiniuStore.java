@@ -210,6 +210,11 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
                 }
             }
             this.downloadDomain = downloadDomain;
+
+            if (!this.checkDownloadDomain()) {
+                return FormValidation.error(Messages.QiniuStore_DescriptorImpl_errors_downloadDomainIsEmpty());
+            }
+
             return FormValidation.ok();
         }
 
@@ -260,6 +265,21 @@ public class QiniuStore extends AbstractDescribableImpl<QiniuStore> implements E
                 }
             }
             return null;
+        }
+
+        private boolean checkDownloadDomain() {
+            if (this.accessKey != null && !this.accessKey.isEmpty() &&
+                    this.secretKey != null && !this.secretKey.isEmpty() &&
+                    this.bucketName != null && !this.bucketName.isEmpty() &&
+                    (this.downloadDomain == null || this.downloadDomain.isEmpty())) {
+                try {
+                    final String[] domainList = this.getBucketManager().domainList(this.bucketName);
+                    return domainList.length > 0;
+                } catch (QiniuException e) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         @Nonnull
