@@ -5,10 +5,12 @@ import com.qiniu.storage.Configuration;
 import com.qiniu.storage.model.FileInfo;
 import com.qiniu.storage.model.FileListing;
 import com.qiniu.util.Auth;
-import hudson.util.Secret;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -17,52 +19,47 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+@Restricted(NoExternalUse.class)
 class QiniuFileSystem implements Serializable {
     private static final Logger LOG = Logger.getLogger(QiniuFileSystem.class.getName());
 
-    private String accessKey, bucketName, downloadDomain;
-    private Secret secretKey;
+    @Nonnull
+    private QiniuConfig config;
+    @Nullable
     private Path objectNamePrefix;
-    private boolean useHTTPs;
+    @Nonnull
     private DirectoryNode rootNode;
+    @Nullable
     private IOException ioException;
 
-    QiniuFileSystem(@Nonnull String accessKey, @Nonnull Secret secretKey, @Nonnull String bucketName,
-                    @Nonnull Path objectNamePrefix, @Nonnull String downloadDomain, boolean useHTTPs) {
-        this.accessKey = accessKey;
-        this.secretKey = secretKey;
-        this.bucketName = bucketName;
+    QiniuFileSystem(@Nonnull final QiniuConfig config, @Nonnull final Path objectNamePrefix) {
+        this.config = config;
         this.objectNamePrefix = objectNamePrefix;
-        this.downloadDomain = downloadDomain;
-        this.useHTTPs = useHTTPs;
         this.rootNode = new DirectoryNode("", this, null);
         initNodes();
     }
 
-    QiniuFileSystem(@Nonnull String accessKey, @Nonnull Secret secretKey, @Nonnull String bucketName,
-                    @Nonnull String downloadDomain, boolean useHTTPs, @Nonnull IOException ioException) {
-        this.accessKey = accessKey;
-        this.secretKey = secretKey;
-        this.bucketName = bucketName;
+    QiniuFileSystem(@Nonnull final QiniuConfig config, @Nonnull final IOException ioException) {
+        this.config = config;
         this.objectNamePrefix = null;
-        this.downloadDomain = downloadDomain;
-        this.useHTTPs = useHTTPs;
         this.rootNode = new DirectoryNode("", this, null);
         this.ioException = ioException;
     }
 
-    static QiniuFileSystem create(@Nonnull String accessKey, @Nonnull Secret secretKey, @Nonnull String bucketName,
-                                  @Nonnull String objectNamePrefix, @Nonnull String downloadDomain, boolean useHTTPs) {
+    @Nonnull
+    static QiniuFileSystem create(@Nonnull final QiniuConfig config, @Nonnull final String objectNamePrefix) {
         try {
-            return new QiniuFileSystem(accessKey, secretKey, bucketName, toPath(objectNamePrefix), downloadDomain, useHTTPs);
+            LOG.log(Level.INFO, "*** QiniuFileSystem::create() 1: toPath(prefix)={0}", toPath(objectNamePrefix));
+            return new QiniuFileSystem(config, toPath(objectNamePrefix));
         } catch (InvalidPathError e) {
-            return new QiniuFileSystem(accessKey, secretKey, bucketName, downloadDomain, useHTTPs, e);
+            LOG.log(Level.INFO, "*** QiniuFileSystem::create() 2: {0}", e);
+            return new QiniuFileSystem(config, e);
         }
     }
 
     private void initNodes() {
         LOG.log(Level.INFO, "QiniuFileSystem::{0}::list()", this.objectNamePrefix);
-        final BucketManager bucketManager = getBucketManager();
+        final BucketManager bucketManager = this.config.getBucketManager();
         String marker = null;
         String prefix = this.objectNamePrefix.toString();
         if (!prefix.endsWith(File.separator)) {
@@ -72,7 +69,7 @@ class QiniuFileSystem implements Serializable {
             for (;;) {
                 LOG.log(Level.INFO, "QiniuFileSystem::{0}::list(), prefix={1}, marker={2}",
                         new Object[]{this.objectNamePrefix, prefix, marker});
-                final FileListing list = bucketManager.listFiles(this.bucketName, prefix, marker, 1000, null);
+                final FileListing list = bucketManager.listFiles(this.config.getBucketName(), prefix, marker, 1000, null);
                 if (list.items != null) {
                     for (FileInfo metadata : list.items) {
                         final Path path = this.objectNamePrefix.relativize(toPath(metadata.key));
@@ -109,7 +106,9 @@ class QiniuFileSystem implements Serializable {
                     throw new InvalidPathError("Path " + path.toString() + " is invalid, file " + path.getName(i).toString() + " is not directory");
                 }
             } else if (createNodeAsDirectory && newCurrentNode == null) {
-                return currentNode.addChildDirectoryNode(currentNodeName);
+                currentNode = currentNode.addChildDirectoryNode(currentNodeName);
+                LOG.log(Level.INFO, "create directory node: {0}", currentNode.getPath().toString());
+                return currentNode;
             } else {
                 return newCurrentNode;
             }
@@ -184,7 +183,7 @@ class QiniuFileSystem implements Serializable {
 
     void deleteAll() throws IOException {
         LOG.log(Level.INFO, "delete all nodes");
-        final BucketManager bucketManager = getBucketManager();
+        final BucketManager bucketManager = this.config.getBucketManager();
         final BucketManager.BatchOperations batch = new BucketManager.BatchOperations();
         int counter = 0;
         String marker = null;
@@ -198,10 +197,10 @@ class QiniuFileSystem implements Serializable {
         }
 
         for (;;) {
-            final FileListing list = bucketManager.listFiles(this.bucketName, prefix, marker, 1000, null);
+            final FileListing list = bucketManager.listFiles(this.config.getBucketName(), prefix, marker, 1000, null);
             if (list.items != null) {
                 for (FileInfo metadata : list.items) {
-                    batch.addDeleteOp(this.bucketName, metadata.key);
+                    batch.addDeleteOp(this.config.getBucketName(), metadata.key);
                     counter++;
                     if (counter >= 1000) {
                         bucketManager.batch(batch);
@@ -228,11 +227,14 @@ class QiniuFileSystem implements Serializable {
     }
 
     static abstract class Node {
+        @Nonnull
         final QiniuFileSystem fileSystem;
+        @Nullable
         final DirectoryNode parentNode;
+        @Nonnull
         final String nodeName;
 
-        Node(@Nonnull String nodeName, @Nonnull QiniuFileSystem fileSystem, DirectoryNode parentNode) {
+        Node(@Nonnull final String nodeName, @Nonnull final QiniuFileSystem fileSystem, @Nullable final DirectoryNode parentNode) {
             this.nodeName = nodeName;
             this.fileSystem = fileSystem;
             this.parentNode = parentNode;
@@ -253,15 +255,11 @@ class QiniuFileSystem implements Serializable {
             return this.parentNode;
         }
 
-        boolean isFile() {
-            return this.getClass().equals(FileNode.class);
-        }
+        abstract boolean isFile();
+        abstract boolean isDirectory();
 
-        boolean isDirectory() {
-            return this.getClass().equals(DirectoryNode.class);
-        }
-
-        @Nonnull Path getPath() {
+        @Nonnull
+        Path getPath() {
             final Node parentNode = this.getParentNode();
             if (parentNode != null) {
                 return parentNode.getPath().resolve(this.nodeName);
@@ -272,33 +270,34 @@ class QiniuFileSystem implements Serializable {
     }
 
     static final class DirectoryNode extends Node {
+        @Nonnull
         private final Map<String, Node> childrenNodes;
 
-        DirectoryNode(@Nonnull String nodeName, @Nonnull QiniuFileSystem fileSystem, DirectoryNode parentNode) {
+        DirectoryNode(@Nonnull final String nodeName, @Nonnull final QiniuFileSystem fileSystem, @Nullable final DirectoryNode parentNode) {
             super(nodeName, fileSystem, parentNode);
             this.childrenNodes = new HashMap<>();
         }
 
         @Nonnull
-        DirectoryNode addChildDirectoryNode(String name) {
+        DirectoryNode addChildDirectoryNode(@Nonnull final String name) {
             final DirectoryNode childNode = new DirectoryNode(name, this.fileSystem, this);
             this.childrenNodes.put(name, childNode);
             return childNode;
         }
 
         @Nonnull
-        FileNode addChildFileNode(String name, @Nonnull FileInfo metadata) {
+        FileNode addChildFileNode(@Nonnull final String name, @Nonnull final FileInfo metadata) {
             final FileNode childNode = new FileNode(name, metadata, this.fileSystem, this);
             this.childrenNodes.put(name, childNode);
             return childNode;
         }
 
-        void removeChildNode(String name) {
+        void removeChildNode(@Nonnull final String name) {
             this.childrenNodes.remove(name);
         }
 
         @CheckForNull
-        Node getByName(String name) {
+        Node getByName(@Nonnull final String name) {
             return this.childrenNodes.get(name);
         }
 
@@ -314,6 +313,16 @@ class QiniuFileSystem implements Serializable {
         @Nonnull
         int getChildrenCount() {
             return this.childrenNodes.size();
+        }
+
+        @Override
+        boolean isFile() {
+            return false;
+        }
+
+        @Override
+        boolean isDirectory() {
+            return true;
         }
     }
 
@@ -332,36 +341,30 @@ class QiniuFileSystem implements Serializable {
     static final class FileNode extends Node {
         private final FileInfo metadata;
 
-        FileNode(@Nonnull String nodeName, @Nonnull FileInfo metadata,
-                 @Nonnull QiniuFileSystem fileSystem, DirectoryNode parentNode) {
+        FileNode(@Nonnull final String nodeName, @Nonnull final FileInfo metadata,
+                 @Nonnull final QiniuFileSystem fileSystem, @Nonnull final DirectoryNode parentNode) {
             super(nodeName, fileSystem, parentNode);
             this.metadata = metadata;
         }
 
+        @Nonnull
         public FileInfo getMetadata() {
             return this.metadata;
+        }
+
+        @Override
+        boolean isFile() {
+            return true;
+        }
+
+        @Override
+        boolean isDirectory() {
+            return false;
         }
     }
 
     @Nonnull
-    private BucketManager getBucketManager() {
-        return new BucketManager(this.getAuth(), this.getConfiguration());
-    }
-
-    @Nonnull
-    private Auth getAuth() {
-        return Auth.create(this.accessKey, this.secretKey.getPlainText());
-    }
-
-    @Nonnull
-    private Configuration getConfiguration() {
-        final Configuration config = new Configuration();
-        config.useHttpsDomains = this.useHTTPs;
-        return config;
-    }
-
-    @Nonnull
-    static Path toPath(@Nonnull String objectName) throws InvalidPathError {
+    static Path toPath(@Nonnull final String objectName) throws InvalidPathError {
         final String[] segments = objectName.split(Pattern.quote(File.separator));
         switch (segments.length) {
         case 0:
@@ -374,18 +377,8 @@ class QiniuFileSystem implements Serializable {
     }
 
     @Nonnull
-    public String getAccessKey() {
-        return this.accessKey;
-    }
-
-    @Nonnull
-    public Secret getSecretKey() {
-        return this.secretKey;
-    }
-
-    @Nonnull
-    public String getBucketName() {
-        return this.bucketName;
+    public QiniuConfig getConfig() {
+        return this.config;
     }
 
     @CheckForNull
@@ -394,26 +387,13 @@ class QiniuFileSystem implements Serializable {
     }
 
     @Nonnull
-    public String getDownloadDomain() {
-        return this.downloadDomain;
-    }
-
-    public boolean isUseHTTPs() {
-        return useHTTPs;
-    }
-
-    @Nonnull
     public DirectoryNode getRootNode() {
         return this.rootNode;
     }
 
     private void writeObject(ObjectOutputStream out) throws IOException {
-        out.writeObject(this.accessKey);
-        out.writeObject(this.secretKey);
-        out.writeObject(this.bucketName);
-        out.writeObject(this.downloadDomain);
+        out.writeObject(this.config);
         SerializeUtils.serializePath(out, this.objectNamePrefix);
-        out.writeBoolean(this.useHTTPs);
         if (this.ioException != null) {
             out.writeBoolean(true);
             out.writeObject(this.ioException.getMessage());
@@ -423,12 +403,8 @@ class QiniuFileSystem implements Serializable {
     }
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        this.accessKey = (String) in.readObject();
-        this.secretKey = (Secret) in.readObject();
-        this.bucketName = (String) in.readObject();
-        this.downloadDomain = (String) in.readObject();
+        this.config = (QiniuConfig) in.readObject();
         this.objectNamePrefix = SerializeUtils.deserializePath(in);
-        this.useHTTPs = in.readBoolean();
         if (in.readBoolean()) {
             this.ioException = new IOException((String) in.readObject());
         } else {

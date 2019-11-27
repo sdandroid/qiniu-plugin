@@ -17,14 +17,18 @@ import hudson.tasks.Recorder;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
 import org.jenkinsci.Symbol;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Restricted(NoExternalUse.class)
 public class QiniuPublisher extends Recorder implements SimpleBuildStep {
     private static final Logger LOG = Logger.getLogger(QiniuPublisher.class.getName());
     private String includeFilesGlob, excludeFilesGlob;
@@ -43,10 +47,6 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         this.caseSensitive = caseSensitive;
     }
 
-    public QiniuPublisher(@Nonnull String includeFilesGlob) {
-        this(includeFilesGlob, "", false, true, true, true);
-    }
-
     @Override
     public void perform(
             @Nonnull Run<?, ?> run, @Nonnull FilePath filePath,
@@ -54,13 +54,9 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         final PrintStream logger = taskListener.getLogger();
         final EnvVars envVars = run.getEnvironment(taskListener);
 
-        if (QiniuStore.getQiniuArtifactManagerFactory() == null) {
-            throw new AbortException(Messages.QiniuPublisher_NotConfigured());
-        } else if (this.includeFilesGlob.length() == 0) {
+        if (this.includeFilesGlob.length() == 0) {
             throw new AbortException(Messages.QiniuPublisher_NoIncludes());
         }
-
-        final QiniuArtifactManager artifactManager = (QiniuArtifactManager) run.pickArtifactManager();
 
         final Result result = run.getResult();
 
@@ -77,6 +73,8 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         final Map<String, String> files = filePath.act(listFiles);
 
         if (!files.isEmpty()) {
+            final QiniuArtifactManager artifactManager = (QiniuArtifactManager) run.pickArtifactManager();
+            artifactManager.getMarker().useQiniuArtifactArchiver();
             artifactManager.archive(filePath, launcher, BuildListenerAdapter.wrap(taskListener), files);
         } else {
             if (result == null || result.isBetterOrEqualTo(Result.UNSTABLE)) {
@@ -148,6 +146,11 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
 
     public void setCaseSensitive(boolean caseSensitive) {
         this.caseSensitive = caseSensitive;
+    }
+
+    @Override
+    public DescriptorImpl getDescriptor() {
+        return (DescriptorImpl) super.getDescriptor();
     }
 
     @Symbol("archiveArtifactsToQiniu")

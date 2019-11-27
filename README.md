@@ -24,15 +24,17 @@ mvn -Djenkins.version=2.125 -Duse-jenkins-bom package
 
 ### 全局配置
 
-- 点击 `Manage Jenkins` 进入管理界面
-- 点击 `Configure System` 进入配置界面
-- 在 `Qiniu Configuration` 配置栏中，依次填写 `Access Key`，`Secret Key` 和 `Bucket Name`，注意 `Bucket Name` 必须是七牛账户中已有的存储空间名称。
+- 点击 `Manage Jenkins` 进入管理界面。
+- 点击 `Configure System` 进入配置界面。
+- 点击 `Artifact Management for Builds` 按钮，选择 `Qiniu Artifact Manager`。
+- 在出现的 `Qiniu Artifact Manager` 配置栏中，依次填写 `Access Key`，`Secret Key` 和 `Bucket Name`，注意 `Bucket Name` 必须是七牛账户中已有的存储空间名称。
 - 可以点击旁边的 `Advanced` 按钮，将出现更多配置项，这里的配置项都是可选的。
 	- `Archive as infrequent storage object` 表示以低频存储的方式存储归档文件，推荐打开。
 	- `Object Name Prefix` 表示在存储空间中的对象名称前缀。
 	- `Bucket Download Domain` 表示存储空间绑定的下载域名，如果不填，则从存储空间中选择一个下载域名。但如果在存储空间中没有绑定任何下载域名，则该项必填。
 	- `Use HTTPs Protocol` 表示是否使用 HTTPS 传输协议，默认使用 HTTP 传输协议。
 	- `Qiniu Uc Domain`，`Qiniu Rs Domain`，`Qiniu API Domain` 都仅在使用七牛私有云时才有必要修改配置，默认使用公有云的配置。
+- 点击 `Save` 按钮保存。
 
 ### 配置任务
 
@@ -44,7 +46,42 @@ mvn -Djenkins.version=2.125 -Duse-jenkins-bom package
   - `Archive artifacts only if build is successful` 表示仅当构建成功才会归档。
   - `Use default excludes` 表示自动将 SCM 软件用的配置文件或数据文件排除，不予归档。
   - `Treat include and exclude patterns as case sensitive` 表示归档结果路径为大小写敏感。
+- 点击 `Save` 按钮保存。
 
-## 已知问题
+### 流水线
 
-- 请勿在 `Post-build Actions` 中同时选择 `Archive the artifacts` 和 `Archive the artifacts to Qiniu`，可能会引发冲突。也不要在已经使用过的任务中切换这两者。
+在 Pipeline 配置界面中，使用 `archiveArtifactsToQiniu` 指令将文件归档到七牛云存储。
+
+#### 脚本案例
+
+```groovy
+node {
+   stage('Build') {
+      sh '''
+#!/bin/bash
+rm -rf **
+mkdir -p {aa,bb,cc}/{dd,ee,ff}
+for file in {aa,bb,cc}/{dd,ee,ff}/{gg,hh,ii}
+do
+  dd if=/dev/urandom of="$file" count=1024 bs=1
+done
+      '''
+   }
+   stage('Results') {
+      archiveArtifactsToQiniu allowEmptyArchive: false, caseSensitive: false, excludeFilesGlob: '', includeFilesGlob: '**', onlyIfSuccessful: false, useDefaultExcludes: false
+   }
+}
+```
+
+#### 参数列表
+
+| 参数名称         | 参数类型 | 描述 | 备注                                      |
+| ---------------- | -------- | -------- | ----------------------------------------- |
+| includeFilesGlob | 字符串   | 要归档的构建结果路径，可以使用通配符 |必填，如果希望归档所有文件，则填写 `'**`|
+| excludeFilesGlob | 字符串   | 要从构建结果中排除一部分文件，依然可以使用通配符 | 必填，如果不希望排除任何文件，则填写 `''` |
+| allowEmptyArchive  | 布尔值   | 允许空的归档文件 | 必填 |
+| onlyIfSuccessful | 布尔值 | 仅当构建成功才会归档 | 必填 |
+| useDefaultExcludes | 布尔值 | 自动将 SCM 软件用的配置文件或数据文件排除，不予归档 |                                      |
+| caseSensitive | 布尔值 | 归档结果路径为大小写敏感 |                                     |
+
+

@@ -6,8 +6,9 @@ import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
-import hudson.util.Secret;
 import jenkins.MasterToSlaveFileCallable;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -16,23 +17,21 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Restricted(NoExternalUse.class)
 class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     private static final Logger LOG = Logger.getLogger(QiniuUploader.class.getName());
 
-    private final String accessKey, bucketName, objectNamePrefix;
-    private final Secret secretKey;
-    private final boolean useHTTPs, infrequentStorage;
+    private final String objectNamePrefix;
+    private final QiniuArtifactManager.Marker marker;
+    private final QiniuConfig config;
     private final Map<String, String> artifactURLs;
     private final TaskListener listener;
 
-    QiniuUploader(@Nonnull String accessKey, @Nonnull Secret secretKey, @Nonnull String bucketName,
-                  boolean useHTTPs, boolean infrequentStorage, @Nonnull Map<String, String> artifactURLs,
-                  @Nonnull String objectNamePrefix, @Nonnull TaskListener listener) {
-        this.accessKey = accessKey;
-        this.secretKey = secretKey;
-        this.bucketName = bucketName;
-        this.useHTTPs = useHTTPs;
-        this.infrequentStorage = infrequentStorage;
+    QiniuUploader(@Nonnull QiniuConfig config, @Nonnull QiniuArtifactManager.Marker marker,
+                  @Nonnull Map<String, String> artifactURLs, @Nonnull String objectNamePrefix,
+                  @Nonnull TaskListener listener) {
+        this.config = config;
+        this.marker = marker;
         this.artifactURLs = artifactURLs;
         this.objectNamePrefix = objectNamePrefix;
         this.listener = listener;
@@ -45,8 +44,12 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
         }
 
         final UploadManager uploadManager = new UploadManager(this.getConfiguration());
-        final Auth auth = Auth.create(this.accessKey, this.secretKey.getPlainText());
-        final String uploadToken = auth.uploadToken(this.bucketName, null, 24 * 3600, new StringMap().put("fileType", 1));
+        final Auth auth = Auth.create(this.config.getAccessKey(), this.config.getSecretKey().getPlainText());
+        StringMap params = new StringMap().put("insertOnly", 1);
+        if (this.config.isInfrequentStorage()) {
+            params = params.put("fileType", 1);
+        }
+        final String uploadToken = auth.uploadToken(this.config.getBucketName(), null, 24 * 3600, params);
 
         try {
             for (Map.Entry<String, String> entry : this.artifactURLs.entrySet()) {
@@ -65,7 +68,7 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     @Nonnull
     private Configuration getConfiguration() {
         final Configuration config = new Configuration();
-        config.useHttpsDomains = this.useHTTPs;
+        config.useHttpsDomains = this.config.isUseHTTPs();
         return config;
     }
 }
