@@ -14,6 +14,7 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
+import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
 import org.jenkinsci.Symbol;
@@ -32,7 +33,7 @@ import java.util.logging.Logger;
 public class QiniuPublisher extends Recorder implements SimpleBuildStep {
     private static final Logger LOG = Logger.getLogger(QiniuPublisher.class.getName());
     private String includeFilesGlob, excludeFilesGlob;
-    private boolean allowEmptyArchive = false, onlyIfSuccessful = true, useDefaultExcludes = true, caseSensitive = true;
+    private boolean allowEmptyArchive, onlyIfSuccessful, useDefaultExcludes, caseSensitive;
 
     @DataBoundConstructor
     public QiniuPublisher(
@@ -162,7 +163,14 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            return true;
+            final QiniuArtifactManagerFactory factory = ArtifactManagerConfiguration.
+                    get().getArtifactManagerFactories().get(QiniuArtifactManagerFactory.class);
+            if (factory == null) {
+                throw new IllegalStateException("Failed to get QiniuArtifactManagerFactory " +
+                        "from ArtifactManagerConfiguration.get().getArtifactManagerFactories()");
+            }
+            LOG.log(Level.INFO, "QiniuPublisher::DescriptorImpl.isApplicable(): {0}", !factory.isApplyForAllJobs());
+            return !factory.isApplyForAllJobs();
         }
 
         @Nonnull

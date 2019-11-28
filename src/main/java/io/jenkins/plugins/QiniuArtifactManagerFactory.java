@@ -35,7 +35,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
     public QiniuArtifactManagerFactory(@Nonnull final String accessKey, @Nonnull final Secret secretKey, @Nonnull final String bucketName,
                                        @Nonnull final String objectNamePrefix, @Nonnull final String downloadDomain,
                                        @Nonnull final String rsDomain, @Nonnull final String ucDomain, @Nonnull final String apiDomain,
-                                       final boolean useHTTPs, final boolean infrequentStorage) {
+                                       final boolean useHTTPs, final boolean infrequentStorage, final boolean applyForAllJobs) {
         if (accessKey.isEmpty()) {
             throw new IllegalArgumentException("accessKey must not be null or empty");
         } else if (secretKey.getPlainText().isEmpty()) {
@@ -44,13 +44,13 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             throw new IllegalArgumentException("bucketName must not be null or empty");
         }
         final QiniuConfig config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain,
-                rsDomain, ucDomain, apiDomain, useHTTPs, infrequentStorage);
+                rsDomain, ucDomain, apiDomain, useHTTPs, infrequentStorage, applyForAllJobs);
         if (downloadDomain.isEmpty()) {
             try {
                 final String[] domainList = config.getBucketManager().domainList(config.getBucketName());
                 if (domainList.length > 0) {
                     this.config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix, domainList[domainList.length - 1],
-                            rsDomain, ucDomain, apiDomain, useHTTPs, infrequentStorage);
+                            rsDomain, ucDomain, apiDomain, useHTTPs, infrequentStorage, applyForAllJobs);
                 } else {
                     throw new CannotGetDownloadDomain("Bucket " + config.getBucketName() + " are not bound with any download domain");
                 }
@@ -334,5 +334,9 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
     public boolean isInfrequentStorage() {
         return this.config.isInfrequentStorage();
+    }
+
+    public boolean isApplyForAllJobs() {
+        return this.config.isApplyForAllJobs();
     }
 }

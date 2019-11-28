@@ -11,5 +11,6 @@
         <f:entry title="${%RsDomain}" field="rsDomain"><f:textbox /></f:entry>
         <f:entry title="${%APIDomain}" field="apiDomain"><f:textbox /></f:entry>
         <f:entry title="${%UseHTTPs}" field="useHTTPs"><f:checkbox /></f:entry>
+        <f:entry title="${%ApplyForAllJobs}" field="applyForAllJobs"><f:checkbox /></f:entry>
     </f:advanced>
 </j:jelly>

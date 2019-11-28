@@ -69,11 +69,14 @@ public class QiniuArtifactManager extends ArtifactManager {
 
     @Override
     public void archive(FilePath workspace, Launcher launcher, BuildListener buildListener, Map<String, String> pathMap) throws IOException, InterruptedException {
-        if (!this.marker.didUseQiniuArtifactArchiver()) {
+        if (!this.config.isApplyForAllJobs() && !this.marker.didUseQiniuArtifactArchiver()) {
             LOG.log(Level.INFO, "StandardArtifactManager::archive()");
             this.standardArtifactManager.archive(workspace, launcher, buildListener, pathMap);
             return;
+        } else if (this.config.isApplyForAllJobs()) {
+            this.marker.useQiniuArtifactArchiver();
         }
+
         LOG.log(Level.INFO, "QiniuArtifactManager::archive()");
         final Map<String, String> artifacts = new HashMap<>();
         for (Map.Entry<String, String> entry : pathMap.entrySet()) {
@@ -138,7 +141,7 @@ public class QiniuArtifactManager extends ArtifactManager {
             final Auth auth = Auth.create(this.config.getAccessKey(), this.config.getSecretKey().getPlainText());
             final String uploadToken = auth.uploadToken(
                     this.config.getBucketName(), null,
-                    24 * 3600, new StringMap().put("fileType", 1).put("insertOnly", 1));
+                    24 * 3600, new StringMap().put("fileType", 1).put("insertOnly", 0));
             uploadManager.put("{}".getBytes("UTF-8"), this.getMarkObjectName(), uploadToken, null, null, true);
         }
 

@@ -21,12 +21,12 @@ public class QiniuConfig implements Serializable {
     @Nonnull
     private final String apiDomain;
 
-    private final boolean useHTTPs, infrequentStorage;
+    private final boolean useHTTPs, infrequentStorage, applyForAllJobs;
 
     public QiniuConfig(@Nonnull final String accessKey, @Nonnull final Secret secretKey, @Nonnull final String bucketName,
                        @Nonnull final String objectNamePrefix, @Nonnull final String downloadDomain,
                        @Nonnull final String rsDomain, @Nonnull final String ucDomain, @Nonnull final String apiDomain,
-                       final boolean useHTTPs, final boolean infrequentStorage) {
+                       final boolean useHTTPs, final boolean infrequentStorage, final boolean applyForAllJobs) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.bucketName = bucketName;
@@ -37,6 +37,7 @@ public class QiniuConfig implements Serializable {
         this.apiDomain = apiDomain;
         this.useHTTPs = useHTTPs;
         this.infrequentStorage = infrequentStorage;
+        this.applyForAllJobs = applyForAllJobs;
     }
 
     @Nonnull
@@ -58,50 +59,54 @@ public class QiniuConfig implements Serializable {
 
     @Nonnull
     public String getAccessKey() {
-        return accessKey;
+        return this.accessKey;
     }
 
     @Nonnull
     public Secret getSecretKey() {
-        return secretKey;
+        return this.secretKey;
     }
 
     @Nonnull
     public String getBucketName() {
-        return bucketName;
+        return this.bucketName;
     }
 
     @Nonnull
     public String getObjectNamePrefix() {
-        return objectNamePrefix;
+        return this.objectNamePrefix;
     }
 
     @Nonnull
     public String getDownloadDomain() {
-        return downloadDomain;
+        return this.downloadDomain;
     }
 
     @Nonnull
     public String getRsDomain() {
-        return rsDomain;
+        return this.rsDomain;
     }
 
     @Nonnull
     public String getUcDomain() {
-        return ucDomain;
+        return this.ucDomain;
     }
 
     @Nonnull
     public String getApiDomain() {
-        return apiDomain;
+        return this.apiDomain;
     }
 
     public boolean isUseHTTPs() {
-        return useHTTPs;
+        return this.useHTTPs;
     }
 
     public boolean isInfrequentStorage() {
-        return infrequentStorage;
+        return this.infrequentStorage;
+    }
+
+    public boolean isApplyForAllJobs() {
+        return this.applyForAllJobs;
     }
 }
 
