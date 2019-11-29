@@ -18,7 +18,7 @@ mvn -Djenkins.version=2.125 -Duse-jenkins-bom package
 ## 安装依赖
 
 - OpenJDK 1.8
-- Jenkins 1.125+
+- Jenkins 2.125+
 
 ## 使用插件
 
