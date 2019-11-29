@@ -79,33 +79,23 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
     @Extension
     public static final class DescriptorImpl extends ArtifactManagerFactoryDescriptor {
-        @Nullable
-        private String accessKey, bucketName, downloadDomain;
-        @Nullable
-        private Secret secretKey;
-        @Nonnull
-        private String rsDomain = Configuration.defaultRsHost,
-                ucDomain = Configuration.defaultUcHost,
-                apiDomain = Configuration.defaultApiHost;
-        private boolean useHTTPs = false;
-
-        public DescriptorImpl() {
-            load();
-            LOG.log(Level.INFO, "Load QiniuArtifactManagerFactory.DescriptorImpl, accessKey={0}, rsDomain={1}", new Object[]{this.accessKey, this.rsDomain});
-        }
-
         @Nonnull
         @Override
         public String getDisplayName() {
             return Messages.QiniuArtifactManagerFactory_DescriptorImpl_DisplayName();
         }
 
-        public FormValidation doCheckAccessKey(@QueryParameter final String accessKey) throws IOException, ServletException {
+        public FormValidation doCheckAccessKey(@QueryParameter final String accessKey,
+                                               @QueryParameter final Secret secretKey,
+                                               @QueryParameter final String bucketName,
+                                               @QueryParameter final String rsDomain,
+                                               @QueryParameter final String ucDomain,
+                                               @QueryParameter final String apiDomain,
+                                               @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
             if (accessKey.isEmpty()) {
                 return FormValidation.error(Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_accessKeyIsEmpty());
             }
-            this.accessKey = accessKey;
-            final Throwable err = this.checkAccessKeySecretKeyAndBucketName();
+            final Throwable err = this.checkAccessKeySecretKeyAndBucketName(accessKey, secretKey, bucketName, rsDomain, ucDomain, apiDomain, useHTTPs);
             if (err == null) {
                 return FormValidation.ok();
             } else {
@@ -113,12 +103,17 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             }
         }
 
-        public FormValidation doCheckSecretKey(@QueryParameter Secret secretKey) throws IOException, ServletException {
+        public FormValidation doCheckSecretKey(@QueryParameter Secret secretKey,
+                                               @QueryParameter final String accessKey,
+                                               @QueryParameter final String bucketName,
+                                               @QueryParameter final String rsDomain,
+                                               @QueryParameter final String ucDomain,
+                                               @QueryParameter final String apiDomain,
+                                               @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
             if (secretKey.getPlainText().isEmpty()) {
                 return FormValidation.error(Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_secretKeyIsEmpty());
             }
-            this.secretKey = secretKey;
-            final Throwable err = this.checkAccessKeySecretKeyAndBucketName();
+            final Throwable err = this.checkAccessKeySecretKeyAndBucketName(accessKey, secretKey, bucketName, rsDomain, ucDomain, apiDomain, useHTTPs);
             if (err == null) {
                 return FormValidation.ok();
             } else {
@@ -126,12 +121,17 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             }
         }
 
-        public FormValidation doCheckBucketName(@QueryParameter final String bucketName) throws IOException, ServletException {
+        public FormValidation doCheckBucketName(@QueryParameter final String bucketName,
+                                                @QueryParameter final String accessKey,
+                                                @QueryParameter final Secret secretKey,
+                                                @QueryParameter final String rsDomain,
+                                                @QueryParameter final String ucDomain,
+                                                @QueryParameter final String apiDomain,
+                                                @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
             if (bucketName.isEmpty()) {
                 return FormValidation.error(Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_bucketNameIsEmpty());
             }
-            this.bucketName = bucketName;
-            final Throwable err = this.checkAccessKeySecretKeyAndBucketName();
+            final Throwable err = this.checkAccessKeySecretKeyAndBucketName(accessKey, secretKey, bucketName, rsDomain, ucDomain, apiDomain, useHTTPs);
             if (err == null) {
                 return FormValidation.ok();
             } else {
@@ -139,7 +139,14 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             }
         }
 
-        public FormValidation doCheckDownloadDomain(@QueryParameter final String downloadDomain) throws IOException, ServletException {
+        public FormValidation doCheckDownloadDomain(@QueryParameter final String downloadDomain,
+                                                    @QueryParameter final String accessKey,
+                                                    @QueryParameter final Secret secretKey,
+                                                    @QueryParameter final String bucketName,
+                                                    @QueryParameter final String rsDomain,
+                                                    @QueryParameter final String ucDomain,
+                                                    @QueryParameter final String apiDomain,
+                                                    @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
             if (!downloadDomain.isEmpty()) {
                 try {
                     new URL("http://" + downloadDomain).openConnection().connect();
@@ -147,9 +154,8 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                     return FormValidation.error(err, Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidDownloadDomain());
                 }
             }
-            this.downloadDomain = downloadDomain;
 
-            if (!this.checkDownloadDomain()) {
+            if (!this.checkDownloadDomain(accessKey, secretKey, bucketName, downloadDomain, rsDomain, ucDomain, apiDomain, useHTTPs)) {
                 return FormValidation.error(Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_downloadDomainIsEmpty());
             }
 
@@ -164,7 +170,6 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                     return FormValidation.error(err, Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidRsDomain());
                 }
             }
-            this.rsDomain = rsDomain;
             return FormValidation.ok();
         }
 
@@ -176,7 +181,6 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                     return FormValidation.error(err, Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidUcDomain());
                 }
             }
-            this.ucDomain = ucDomain;
             return FormValidation.ok();
         }
 
@@ -188,18 +192,20 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                     return FormValidation.error(err, Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidAPIDomain());
                 }
             }
-            this.apiDomain = apiDomain;
             return FormValidation.ok();
         }
 
-        private Throwable checkAccessKeySecretKeyAndBucketName() {
-            final BucketManager bucketManager = this.getBucketManager();
+        private Throwable checkAccessKeySecretKeyAndBucketName(final String accessKey, final Secret secretKey,
+                                                               final String bucketName, final String rsDomain,
+                                                               final String ucDomain, final String apiDomain,
+                                                               final boolean useHTTPs) {
+            final BucketManager bucketManager = this.getBucketManager(accessKey, secretKey, rsDomain, ucDomain, apiDomain, useHTTPs);
             if (bucketManager != null &&
-                    this.accessKey != null && !this.accessKey.isEmpty() &&
-                    this.secretKey != null && !this.secretKey.getPlainText().isEmpty() &&
-                    this.bucketName != null && !this.bucketName.isEmpty()) {
+                    accessKey != null && !accessKey.isEmpty() &&
+                    secretKey != null && !secretKey.getPlainText().isEmpty() &&
+                    bucketName != null && !bucketName.isEmpty()) {
                 try {
-                    bucketManager.getBucketInfo(this.bucketName);
+                    bucketManager.getBucketInfo(bucketName);
                 } catch (QiniuException e) {
                     return e;
                 }
@@ -207,15 +213,18 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             return null;
         }
 
-        private boolean checkDownloadDomain() {
-            final BucketManager bucketManager = this.getBucketManager();
+        private boolean checkDownloadDomain(final String accessKey, final Secret secretKey,
+                                            final String bucketName, final String downloadDomain,
+                                            final String rsDomain, final String ucDomain,
+                                            final String apiDomain, final boolean useHTTPs) {
+            final BucketManager bucketManager = this.getBucketManager(accessKey, secretKey, rsDomain, ucDomain, apiDomain, useHTTPs);
             if (bucketManager != null &&
-                    this.accessKey != null && !this.accessKey.isEmpty() &&
-                    this.secretKey != null && !this.secretKey.getPlainText().isEmpty() &&
-                    this.bucketName != null && !this.bucketName.isEmpty() &&
-                    (this.downloadDomain == null || this.downloadDomain.isEmpty())) {
+                    accessKey != null && !accessKey.isEmpty() &&
+                    secretKey != null && !secretKey.getPlainText().isEmpty() &&
+                    bucketName != null && !bucketName.isEmpty() &&
+                    (downloadDomain == null || downloadDomain.isEmpty())) {
                 try {
-                    final String[] domainList = bucketManager.domainList(this.bucketName);
+                    final String[] domainList = bucketManager.domainList(bucketName);
                     return domainList.length > 0;
                 } catch (QiniuException e) {
                     return false;
@@ -225,9 +234,11 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         }
 
         @CheckForNull
-        private BucketManager getBucketManager() {
-            final Auth auth = this.getAuth();
-            final Configuration config = this.getConfiguration();
+        private BucketManager getBucketManager(final String accessKey, final Secret secretKey,
+                                               final String rsDomain, final String ucDomain,
+                                               final String apiDomain, final boolean useHTTPs) {
+            final Auth auth = this.getAuth(accessKey, secretKey);
+            final Configuration config = this.getConfiguration(rsDomain, ucDomain, apiDomain, useHTTPs);
             if (auth == null) {
                 return null;
             }
@@ -235,28 +246,29 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         }
 
         @CheckForNull
-        private Auth getAuth() {
-            if (this.accessKey == null || this.accessKey.isEmpty() ||
-                    this.secretKey == null || this.secretKey.getPlainText().isEmpty()) {
+        private Auth getAuth(final String accessKey, final Secret secretKey) {
+            if (accessKey == null || accessKey.isEmpty() ||
+                    secretKey == null || secretKey.getPlainText().isEmpty()) {
                 return null;
             }
-            return Auth.create(this.accessKey, this.secretKey.getPlainText());
+            return Auth.create(accessKey, secretKey.getPlainText());
         }
 
         @Nonnull
-        private Configuration getConfiguration() {
-            if (this.rsDomain != null && !this.rsDomain.isEmpty() && !Configuration.defaultRsHost.equals(this.rsDomain)) {
-                Configuration.defaultRsHost = this.rsDomain;
+        private Configuration getConfiguration(final String rsDomain, final String ucDomain,
+                                               final String apiDomain, final boolean useHTTPs) {
+            if (rsDomain != null && !rsDomain.isEmpty() && !Configuration.defaultRsHost.equals(rsDomain)) {
+                Configuration.defaultRsHost = rsDomain;
             }
-            if (this.ucDomain != null && !this.ucDomain.isEmpty() && !Configuration.defaultUcHost.equals(this.ucDomain)) {
-                Configuration.defaultUcHost = this.ucDomain;
+            if (ucDomain != null && !ucDomain.isEmpty() && !Configuration.defaultUcHost.equals(ucDomain)) {
+                Configuration.defaultUcHost = ucDomain;
             }
-            if (this.apiDomain != null && !this.apiDomain.isEmpty() && !Configuration.defaultApiHost.equals(this.apiDomain)) {
-                Configuration.defaultApiHost = this.apiDomain;
+            if (apiDomain != null && !apiDomain.isEmpty() && !Configuration.defaultApiHost.equals(apiDomain)) {
+                Configuration.defaultApiHost = apiDomain;
             }
 
             final Configuration config = new Configuration();
-            config.useHttpsDomains = this.useHTTPs;
+            config.useHttpsDomains = useHTTPs;
             return config;
         }
     }
