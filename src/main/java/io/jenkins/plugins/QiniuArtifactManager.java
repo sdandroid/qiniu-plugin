@@ -96,7 +96,9 @@ public class QiniuArtifactManager extends ArtifactManager {
         LOG.log(Level.INFO, "QiniuArtifactManager::delete()");
 
         final QiniuFile qiniuFile = (QiniuFile) this.root();
-        return qiniuFile.deleteRecursively();
+        final boolean result = qiniuFile.deleteRecursively();
+        this.marker.deleteQiniuArtifactArchiverMark();
+        return result;
     }
 
     @Override
@@ -116,20 +118,21 @@ public class QiniuArtifactManager extends ArtifactManager {
     }
 
     public static final class Marker implements Serializable {
+        private static final long serialVersionUID = 2L;
         @Nonnull
-        private final String objectNamePrefix;
+        private final String objectName;
         @Nonnull
         private final QiniuConfig config;
 
         private Marker(@Nonnull final String objectNamePrefix, @Nonnull final QiniuConfig config) {
-            this.objectNamePrefix = objectNamePrefix;
+            this.objectName = this.getMarkObjectName(objectNamePrefix);
             this.config = config;
         }
 
         public boolean didUseQiniuArtifactArchiver() {
             final BucketManager bucketManager = this.config.getBucketManager();
             try {
-                bucketManager.stat(this.config.getBucketName(), this.getMarkObjectName());
+                bucketManager.stat(this.config.getBucketName(), this.objectName);
                 return true;
             } catch (QiniuException e) {
                 return false;
@@ -142,12 +145,16 @@ public class QiniuArtifactManager extends ArtifactManager {
             final String uploadToken = auth.uploadToken(
                     this.config.getBucketName(), null,
                     24 * 3600, new StringMap().put("fileType", 1).put("insertOnly", 0));
-            uploadManager.put("{}".getBytes("UTF-8"), this.getMarkObjectName(), uploadToken, null, null, true);
+            uploadManager.put("{}".getBytes("UTF-8"), this.objectName, uploadToken, null, null, true);
+        }
+
+        public void deleteQiniuArtifactArchiverMark() throws IOException {
+            this.config.getBucketManager().delete(this.config.getBucketName(), this.objectName);
         }
 
         @Nonnull
-        private String getMarkObjectName() {
-            String name = this.objectNamePrefix;
+        private String getMarkObjectName(@Nonnull final String objectNamePrefix) {
+            String name = objectNamePrefix;
             while (name.endsWith(File.separator)) {
                 name = name.substring(0, name.length() - 1);
             }
