@@ -60,7 +60,6 @@ mvn -Djenkins.version=2.125 -Duse-jenkins-bom package
 node {
    stage('Build') {
       sh '''
-#!/bin/bash
 rm -rf **
 mkdir -p {aa,bb,cc}/{dd,ee,ff}
 for file in {aa,bb,cc}/{dd,ee,ff}/{gg,hh,ii}
