@@ -49,10 +49,8 @@ class QiniuFileSystem implements Serializable {
     @Nonnull
     static QiniuFileSystem create(@Nonnull final QiniuConfig config, @Nonnull final String objectNamePrefix) {
         try {
-            LOG.log(Level.INFO, "*** QiniuFileSystem::create() 1: toPath(prefix)={0}", toPath(objectNamePrefix));
             return new QiniuFileSystem(config, toPath(objectNamePrefix));
         } catch (InvalidPathError e) {
-            LOG.log(Level.INFO, "*** QiniuFileSystem::create() 2: {0}", e);
             return new QiniuFileSystem(config, e);
         }
     }
