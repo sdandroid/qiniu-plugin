@@ -1,6 +1,7 @@
 package io.jenkins.plugins;
 
 import com.qiniu.common.QiniuException;
+import com.qiniu.http.Client;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
 import com.qiniu.util.Auth;
@@ -19,7 +20,6 @@ import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.net.URL;
@@ -237,6 +237,8 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         private BucketManager getBucketManager(final String accessKey, final Secret secretKey,
                                                final String rsDomain, final String ucDomain,
                                                final String apiDomain, final boolean useHTTPs) {
+            Initializer.setAppName();
+
             final Auth auth = this.getAuth(accessKey, secretKey);
             final Configuration config = this.getConfiguration(rsDomain, ucDomain, apiDomain, useHTTPs);
             if (auth == null) {

@@ -42,6 +42,7 @@ public class QiniuConfig implements Serializable {
 
     @Nonnull
     public BucketManager getBucketManager() {
+        Initializer.setAppName();
         return new BucketManager(this.getAuth(), this.getConfiguration());
     }
 

@@ -145,6 +145,7 @@ public class QiniuArtifactManager extends ArtifactManager {
             final String uploadToken = auth.uploadToken(
                     this.config.getBucketName(), null,
                     24 * 3600, new StringMap().put("fileType", 1).put("insertOnly", 0));
+            Initializer.setAppName();
             uploadManager.put("{}".getBytes("UTF-8"), this.objectName, uploadToken, null, null, true);
         }
 

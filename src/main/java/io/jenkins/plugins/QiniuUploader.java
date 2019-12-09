@@ -51,6 +51,8 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
         }
         final String uploadToken = auth.uploadToken(this.config.getBucketName(), null, 24 * 3600, params);
 
+        Initializer.setAppName();
+
         try {
             for (Map.Entry<String, String> entry : this.artifactURLs.entrySet()) {
                 final String objectName = this.objectNamePrefix + entry.getKey();
