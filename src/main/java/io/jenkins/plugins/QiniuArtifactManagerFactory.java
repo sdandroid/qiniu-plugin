@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 
 @Restricted(NoExternalUse.class)
 public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
+    public static final boolean applyForAllJobs = false;
     private static final Logger LOG = Logger.getLogger(QiniuArtifactManagerFactory.class.getName());
     private final QiniuConfig config;
 
@@ -35,7 +36,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
     public QiniuArtifactManagerFactory(@Nonnull final String accessKey, @Nonnull final Secret secretKey, @Nonnull final String bucketName,
                                        @Nonnull final String objectNamePrefix, @Nonnull final String downloadDomain,
                                        @Nonnull final String rsDomain, @Nonnull final String ucDomain, @Nonnull final String apiDomain,
-                                       final boolean useHTTPs, final boolean infrequentStorage, final boolean applyForAllJobs) {
+                                       final boolean useHTTPs, final boolean infrequentStorage) {
         if (accessKey.isEmpty()) {
             throw new IllegalArgumentException("accessKey must not be null or empty");
         } else if (secretKey.getPlainText().isEmpty()) {
