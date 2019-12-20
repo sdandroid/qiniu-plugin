@@ -53,6 +53,16 @@ public class QiniuConfig implements Serializable {
 
     @Nonnull
     public Configuration getConfiguration() {
+        if (!Configuration.defaultRsHost.equals(this.rsDomain)) {
+            Configuration.defaultRsHost = this.rsDomain;
+        }
+        if (!Configuration.defaultUcHost.equals(this.ucDomain)) {
+            Configuration.defaultUcHost = this.ucDomain;
+        }
+        if (!Configuration.defaultApiHost.equals(this.apiDomain)) {
+            Configuration.defaultApiHost = this.apiDomain;
+        }
+
         final Configuration config = new Configuration();
         config.useHttpsDomains = this.useHTTPs;
         return config;
