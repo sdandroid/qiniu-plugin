@@ -2,6 +2,7 @@ package io.jenkins.plugins;
 
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
+import com.qiniu.storage.Region;
 import com.qiniu.util.Auth;
 import hudson.util.Secret;
 import javax.annotation.Nonnull;
@@ -65,6 +66,8 @@ public class QiniuConfig implements Serializable {
 
         final Configuration config = new Configuration();
         config.useHttpsDomains = this.useHTTPs;
+        config.region = Region.autoRegion((this.useHTTPs ? "https://" : "http://") + this.ucDomain);
+        config.useDefaultUpHostIfNone = false;
         return config;
     }
 

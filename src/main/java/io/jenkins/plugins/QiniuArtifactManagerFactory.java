@@ -4,6 +4,7 @@ import com.qiniu.common.QiniuException;
 import com.qiniu.http.Client;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
+import com.qiniu.storage.Region;
 import com.qiniu.util.Auth;
 import hudson.Extension;
 import hudson.model.Run;
@@ -272,6 +273,8 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
             final Configuration config = new Configuration();
             config.useHttpsDomains = useHTTPs;
+            config.region = Region.autoRegion((useHTTPs ? "https://" : "http://") + ucDomain);
+            config.useDefaultUpHostIfNone = false;
             return config;
         }
     }

@@ -2,6 +2,7 @@ package io.jenkins.plugins;
 
 import com.qiniu.common.QiniuException;
 import com.qiniu.storage.BucketManager;
+import com.qiniu.storage.Configuration;
 import com.qiniu.storage.UploadManager;
 import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;

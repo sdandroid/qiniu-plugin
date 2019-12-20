@@ -1,6 +1,7 @@
 package io.jenkins.plugins;
 
 import com.qiniu.storage.Configuration;
+import com.qiniu.storage.Region;
 import com.qiniu.storage.UploadManager;
 import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
@@ -81,6 +82,8 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
 
         final Configuration config = new Configuration();
         config.useHttpsDomains = this.config.isUseHTTPs();
+        config.region = Region.autoRegion((config.useHttpsDomains ? "https://" : "http://") + this.config.getUcDomain());
+        config.useDefaultUpHostIfNone = false;
         return config;
     }
 }
