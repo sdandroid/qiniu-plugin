@@ -82,8 +82,12 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
 
         final Configuration config = new Configuration();
         config.useHttpsDomains = this.config.isUseHTTPs();
-        config.region = Region.autoRegion((config.useHttpsDomains ? "https://" : "http://") + this.config.getUcDomain());
-        config.useDefaultUpHostIfNone = false;
+        config.region = new Region.Builder().
+                accUpHost(this.config.getUpDomain()).
+                srcUpHost(this.config.getUpDomain()).
+                rsHost(this.config.getRsDomain()).
+                rsfHost(this.config.getRsfDomain()).
+                build();
         return config;
     }
 }

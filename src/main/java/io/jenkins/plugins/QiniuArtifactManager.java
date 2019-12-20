@@ -136,6 +136,7 @@ public class QiniuArtifactManager extends ArtifactManager {
                 bucketManager.stat(this.config.getBucketName(), this.objectName);
                 return true;
             } catch (QiniuException e) {
+                LOG.log(Level.ALL, "Failed to detect qiniu artifact archiver mark: {0}", e);
                 return false;
             }
         }

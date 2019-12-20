@@ -14,26 +14,25 @@ public class QiniuConfig implements Serializable {
     @Nonnull
     private final Secret secretKey;
     @Nonnull
-    private final String bucketName, objectNamePrefix, downloadDomain;
+    private final String bucketName, objectNamePrefix, downloadDomain, upDomain;
     @Nonnull
-    private final String rsDomain;
-    @Nonnull
-    private final String ucDomain;
-    @Nonnull
-    private final String apiDomain;
+    private final String rsDomain, rsfDomain, ucDomain, apiDomain;
 
     private final boolean useHTTPs, infrequentStorage, applyForAllJobs;
 
     public QiniuConfig(@Nonnull final String accessKey, @Nonnull final Secret secretKey, @Nonnull final String bucketName,
-                       @Nonnull final String objectNamePrefix, @Nonnull final String downloadDomain,
-                       @Nonnull final String rsDomain, @Nonnull final String ucDomain, @Nonnull final String apiDomain,
+                       @Nonnull final String objectNamePrefix, @Nonnull final String downloadDomain, @Nonnull final String upDomain,
+                       @Nonnull final String rsDomain, @Nonnull final String rsfDomain,
+                       @Nonnull final String ucDomain, @Nonnull final String apiDomain,
                        final boolean useHTTPs, final boolean infrequentStorage, final boolean applyForAllJobs) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.bucketName = bucketName;
         this.objectNamePrefix = objectNamePrefix;
         this.downloadDomain = downloadDomain;
+        this.upDomain = upDomain;
         this.rsDomain = rsDomain;
+        this.rsfDomain = rsfDomain;
         this.ucDomain = ucDomain;
         this.apiDomain = apiDomain;
         this.useHTTPs = useHTTPs;
@@ -66,8 +65,12 @@ public class QiniuConfig implements Serializable {
 
         final Configuration config = new Configuration();
         config.useHttpsDomains = this.useHTTPs;
-        config.region = Region.autoRegion((this.useHTTPs ? "https://" : "http://") + this.ucDomain);
-        config.useDefaultUpHostIfNone = false;
+        config.region = new Region.Builder().
+                accUpHost(upDomain).
+                srcUpHost(upDomain).
+                rsHost(rsDomain).
+                rsfHost(rsfDomain).
+                build();
         return config;
     }
 
@@ -97,8 +100,18 @@ public class QiniuConfig implements Serializable {
     }
 
     @Nonnull
+    public String getUpDomain() {
+        return this.upDomain;
+    }
+
+    @Nonnull
     public String getRsDomain() {
         return this.rsDomain;
+    }
+
+    @Nonnull
+    public String getRsfDomain() {
+        return this.rsfDomain;
     }
 
     @Nonnull
