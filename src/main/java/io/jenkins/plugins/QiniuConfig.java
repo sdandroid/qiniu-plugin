@@ -4,6 +4,7 @@ import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
 import com.qiniu.storage.Region;
 import com.qiniu.util.Auth;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.util.Secret;
 import javax.annotation.Nonnull;
 import java.io.Serializable;
@@ -52,6 +53,7 @@ public class QiniuConfig implements Serializable {
     }
 
     @Nonnull
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD", justification = "I must set static variable here")
     public Configuration getConfiguration() {
         if (!Configuration.defaultRsHost.equals(this.rsDomain)) {
             Configuration.defaultRsHost = this.rsDomain;
@@ -66,10 +68,11 @@ public class QiniuConfig implements Serializable {
         final Configuration config = new Configuration();
         config.useHttpsDomains = this.useHTTPs;
         config.region = new Region.Builder().
-                accUpHost(upDomain).
-                srcUpHost(upDomain).
-                rsHost(rsDomain).
-                rsfHost(rsfDomain).
+                accUpHost(this.upDomain).
+                srcUpHost(this.upDomain).
+                rsHost(this.rsDomain).
+                rsfHost(this.rsfDomain).
+                apiHost(this.apiDomain).
                 build();
         return config;
     }

@@ -312,6 +312,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                     srcUpHost(upDomain).
                     rsHost(rsDomain).
                     rsfHost(rsfDomain).
+                    apiHost(apiDomain).
                     build();
             return config;
         }

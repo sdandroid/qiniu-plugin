@@ -5,6 +5,7 @@ import com.qiniu.storage.Region;
 import com.qiniu.storage.UploadManager;
 import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
@@ -69,6 +70,7 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     }
 
     @Nonnull
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD", justification = "I must set static variable here")
     private Configuration getConfiguration() {
         if (!Configuration.defaultRsHost.equals(this.config.getRsDomain())) {
             Configuration.defaultRsHost = this.config.getRsDomain();
@@ -87,6 +89,7 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
                 srcUpHost(this.config.getUpDomain()).
                 rsHost(this.config.getRsDomain()).
                 rsfHost(this.config.getRsfDomain()).
+                apiHost(this.config.getApiDomain()).
                 build();
         return config;
     }
