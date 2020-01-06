@@ -5,7 +5,7 @@
 克隆代码仓库
 
 ```bash
-git clone git@github.com:bachue/qiniu-jenkins-plugin.git
+git clone git@github.com:qiniu/qiniu-jenkins-plugin.git
 ```
 
 进入插件目录并构建插件
