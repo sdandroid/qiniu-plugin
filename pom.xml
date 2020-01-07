@@ -8,11 +8,11 @@
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
-    <artifactId>qiniu-jenkins</artifactId>
+    <artifactId>qiniu</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <properties>
-        <jenkins.version>2.125</jenkins.version>
+        <jenkins.version>2.121.3</jenkins.version>
         <java.level>8</java.level>
     </properties>
     <name>Qiniu Jenkins Plugin</name>
@@ -22,11 +22,11 @@
             <url>https://opensource.org/licenses/MIT</url>
         </license>
     </licenses>
-    <url>https://github.com/qiniu/${project.artifactId}-plugin</url>
+    <url>https://github.com/qiniu/${project.artifactId}-jenkins-plugin</url>
     <scm>
-        <connection>scm:git:git://github.com/qiniu/${project.artifactId}-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:qiniu/${project.artifactId}-plugin.git</developerConnection>
-        <url>https://github.com/qiniu/${project.artifactId}-plugin</url>
+        <connection>scm:git:git://github.com/qiniu/${project.artifactId}-jenkins-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:qiniu/${project.artifactId}-jenkins-plugin.git</developerConnection>
+        <url>https://github.com/qiniu/${project.artifactId}-jenkins-plugin</url>
     </scm>
     <repositories>
         <repository>

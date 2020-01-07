@@ -12,13 +12,13 @@ git clone git@github.com:qiniu/qiniu-jenkins-plugin.git
 
 ```bash
 cd qiniu-jenkins-plugin
-mvn -Djenkins.version=2.125 -Duse-jenkins-bom package
+mvn -Djenkins.version=2.121.3 -Duse-jenkins-bom package
 ```
 
 ## 安装依赖
 
 - OpenJDK 1.8
-- Jenkins 2.125+
+- Jenkins 2.121+
 
 ## 使用插件
 
