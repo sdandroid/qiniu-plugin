@@ -1,19 +1,19 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry title="${%QiniuAccessKey}" field="accessKey" description="${%QiniuAccessKeyDescription}"><f:textbox /></f:entry>
-    <f:entry title="${%QiniuSecretKey}" field="secretKey" description="${%QiniuSecretKeyDescription}"><f:password /></f:entry>
-    <f:entry title="${%BucketName}" field="bucketName"><f:textbox /></f:entry>
+    <f:entry title="${%QiniuAccessKey}" field="accessKey" description="${%QiniuAccessKeyDescription}"><f:textbox checkMethod="post" /></f:entry>
+    <f:entry title="${%QiniuSecretKey}" field="secretKey" description="${%QiniuSecretKeyDescription}"><f:password checkMethod="post" /></f:entry>
+    <f:entry title="${%BucketName}" field="bucketName"><f:textbox checkMethod="post" /></f:entry>
     <f:advanced>
         <f:entry title="${%InfrequentStorage}" field="infrequentStorage"><f:checkbox /></f:entry>
-        <f:entry title="${%DownloadDomain}" field="downloadDomain"><f:textbox /></f:entry>
-        <f:entry title="${%ObjectNamePrefix}" field="objectNamePrefix"><f:textbox /></f:entry>
+        <f:entry title="${%DownloadDomain}" field="downloadDomain"><f:textbox checkMethod="post" /></f:entry>
+        <f:entry title="${%ObjectNamePrefix}" field="objectNamePrefix"><f:textbox checkMethod="post" /></f:entry>
         <f:entry title="${%UseHTTPs}" field="useHTTPs"><f:checkbox /></f:entry>
         <f:section title="${%ArchiveFilesToPrivateCloud}">
-            <f:entry title="${%UpDomain}" field="upDomain"><f:textbox /></f:entry>
-            <f:entry title="${%UcDomain}" field="ucDomain"><f:textbox /></f:entry>
-            <f:entry title="${%RsDomain}" field="rsDomain"><f:textbox /></f:entry>
-            <f:entry title="${%RsfDomain}" field="rsfDomain"><f:textbox /></f:entry>
-            <f:entry title="${%APIDomain}" field="apiDomain"><f:textbox /></f:entry>
+            <f:entry title="${%UpDomain}" field="upDomain"><f:textbox checkMethod="post" /></f:entry>
+            <f:entry title="${%UcDomain}" field="ucDomain"><f:textbox checkMethod="post" /></f:entry>
+            <f:entry title="${%RsDomain}" field="rsDomain"><f:textbox checkMethod="post" /></f:entry>
+            <f:entry title="${%RsfDomain}" field="rsfDomain"><f:textbox checkMethod="post" /></f:entry>
+            <f:entry title="${%APIDomain}" field="apiDomain"><f:textbox checkMethod="post" /></f:entry>
         </f:section>
     </f:advanced>
 </j:jelly>

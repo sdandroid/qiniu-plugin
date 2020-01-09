@@ -1,12 +1,12 @@
 package io.jenkins.plugins;
 
 import com.qiniu.common.QiniuException;
-import com.qiniu.http.Client;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
 import com.qiniu.storage.Region;
 import com.qiniu.util.Auth;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Run;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
@@ -18,6 +18,7 @@ import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -34,16 +35,23 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
     private final QiniuConfig config;
 
     @DataBoundConstructor
-    public QiniuArtifactManagerFactory(@Nonnull final String accessKey, @Nonnull final Secret secretKey, @Nonnull final String bucketName,
-                                       @Nonnull final String objectNamePrefix, @Nonnull final String downloadDomain,
-                                       @Nonnull final String rsDomain, @Nonnull final String rsfDomain, @Nonnull final String ucDomain,
-                                       @Nonnull final String apiDomain, @Nonnull final String upDomain,
+    public QiniuArtifactManagerFactory(@Nonnull String accessKey, @Nonnull final Secret secretKey, @Nonnull String bucketName,
+                                       @Nonnull String objectNamePrefix, @Nonnull String downloadDomain,
+                                       @Nonnull String rsDomain, @Nonnull String rsfDomain, @Nonnull String ucDomain,
+                                       @Nonnull String apiDomain, @Nonnull String upDomain,
                                        final boolean useHTTPs, final boolean infrequentStorage) {
-        if (accessKey.isEmpty()) {
+        accessKey = Util.fixEmptyAndTrim(accessKey);
+        bucketName = Util.fixEmptyAndTrim(bucketName);
+        upDomain = Util.fixEmptyAndTrim(upDomain);
+        rsDomain = Util.fixEmptyAndTrim(rsDomain);
+        rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
+        ucDomain = Util.fixEmptyAndTrim(ucDomain);
+        apiDomain = Util.fixEmptyAndTrim(apiDomain);
+        if (accessKey == null) {
             throw new IllegalArgumentException("accessKey must not be null or empty");
-        } else if (secretKey.getPlainText().isEmpty()) {
+        } else if (secretKey == null || Util.fixEmptyAndTrim(secretKey.getPlainText()) == null) {
             throw new IllegalArgumentException("secretKey must not be null or empty");
-        } else if (bucketName.isEmpty()) {
+        } else if (bucketName == null) {
             throw new IllegalArgumentException("bucketName must not be null or empty");
         }
         final QiniuConfig config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain,
@@ -88,16 +96,24 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             return Messages.QiniuArtifactManagerFactory_DescriptorImpl_DisplayName();
         }
 
-        public FormValidation doCheckAccessKey(@QueryParameter final String accessKey,
+        @POST
+        public FormValidation doCheckAccessKey(@QueryParameter String accessKey,
+                                               @QueryParameter String bucketName,
+                                               @QueryParameter String upDomain,
+                                               @QueryParameter String rsDomain,
+                                               @QueryParameter String rsfDomain,
+                                               @QueryParameter String ucDomain,
+                                               @QueryParameter String apiDomain,
                                                @QueryParameter final Secret secretKey,
-                                               @QueryParameter final String bucketName,
-                                               @QueryParameter final String upDomain,
-                                               @QueryParameter final String rsDomain,
-                                               @QueryParameter final String rsfDomain,
-                                               @QueryParameter final String ucDomain,
-                                               @QueryParameter final String apiDomain,
                                                @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
-            if (accessKey.isEmpty()) {
+            accessKey = Util.fixEmptyAndTrim(accessKey);
+            bucketName = Util.fixEmptyAndTrim(bucketName);
+            upDomain = Util.fixEmptyAndTrim(upDomain);
+            rsDomain = Util.fixEmptyAndTrim(rsDomain);
+            rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
+            ucDomain = Util.fixEmptyAndTrim(ucDomain);
+            apiDomain = Util.fixEmptyAndTrim(apiDomain);
+            if (accessKey == null) {
                 return FormValidation.error(Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_accessKeyIsEmpty());
             }
             final Throwable err = this.checkAccessKeySecretKeyAndBucketName(accessKey, secretKey, bucketName, upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs);
@@ -108,16 +124,24 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             }
         }
 
-        public FormValidation doCheckSecretKey(@QueryParameter Secret secretKey,
-                                               @QueryParameter final String accessKey,
-                                               @QueryParameter final String bucketName,
-                                               @QueryParameter final String upDomain,
-                                               @QueryParameter final String rsDomain,
-                                               @QueryParameter final String rsfDomain,
-                                               @QueryParameter final String ucDomain,
-                                               @QueryParameter final String apiDomain,
+        @POST
+        public FormValidation doCheckSecretKey(@QueryParameter final Secret secretKey,
+                                               @QueryParameter String accessKey,
+                                               @QueryParameter String bucketName,
+                                               @QueryParameter String upDomain,
+                                               @QueryParameter String rsDomain,
+                                               @QueryParameter String rsfDomain,
+                                               @QueryParameter String ucDomain,
+                                               @QueryParameter String apiDomain,
                                                @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
-            if (secretKey.getPlainText().isEmpty()) {
+            accessKey = Util.fixEmptyAndTrim(accessKey);
+            bucketName = Util.fixEmptyAndTrim(bucketName);
+            upDomain = Util.fixEmptyAndTrim(upDomain);
+            rsDomain = Util.fixEmptyAndTrim(rsDomain);
+            rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
+            ucDomain = Util.fixEmptyAndTrim(ucDomain);
+            apiDomain = Util.fixEmptyAndTrim(apiDomain);
+            if (secretKey == null || Util.fixEmptyAndTrim(secretKey.getPlainText()) == null) {
                 return FormValidation.error(Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_secretKeyIsEmpty());
             }
             final Throwable err = this.checkAccessKeySecretKeyAndBucketName(accessKey, secretKey, bucketName, upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs);
@@ -128,16 +152,24 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             }
         }
 
-        public FormValidation doCheckBucketName(@QueryParameter final String bucketName,
-                                                @QueryParameter final String accessKey,
+        @POST
+        public FormValidation doCheckBucketName(@QueryParameter String bucketName,
+                                                @QueryParameter String accessKey,
+                                                @QueryParameter String upDomain,
+                                                @QueryParameter String rsDomain,
+                                                @QueryParameter String rsfDomain,
+                                                @QueryParameter String ucDomain,
+                                                @QueryParameter String apiDomain,
                                                 @QueryParameter final Secret secretKey,
-                                                @QueryParameter final String upDomain,
-                                                @QueryParameter final String rsDomain,
-                                                @QueryParameter final String rsfDomain,
-                                                @QueryParameter final String ucDomain,
-                                                @QueryParameter final String apiDomain,
                                                 @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
-            if (bucketName.isEmpty()) {
+            accessKey = Util.fixEmptyAndTrim(accessKey);
+            bucketName = Util.fixEmptyAndTrim(bucketName);
+            upDomain = Util.fixEmptyAndTrim(upDomain);
+            rsDomain = Util.fixEmptyAndTrim(rsDomain);
+            rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
+            ucDomain = Util.fixEmptyAndTrim(ucDomain);
+            apiDomain = Util.fixEmptyAndTrim(apiDomain);
+            if (bucketName == null) {
                 return FormValidation.error(Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_bucketNameIsEmpty());
             }
             final Throwable err = this.checkAccessKeySecretKeyAndBucketName(accessKey, secretKey, bucketName, upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs);
@@ -148,17 +180,25 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             }
         }
 
-        public FormValidation doCheckDownloadDomain(@QueryParameter final String downloadDomain,
-                                                    @QueryParameter final String accessKey,
+        @POST
+        public FormValidation doCheckDownloadDomain(@QueryParameter String downloadDomain,
+                                                    @QueryParameter String accessKey,
+                                                    @QueryParameter String bucketName,
+                                                    @QueryParameter String upDomain,
+                                                    @QueryParameter String rsDomain,
+                                                    @QueryParameter String rsfDomain,
+                                                    @QueryParameter String ucDomain,
+                                                    @QueryParameter String apiDomain,
                                                     @QueryParameter final Secret secretKey,
-                                                    @QueryParameter final String bucketName,
-                                                    @QueryParameter final String upDomain,
-                                                    @QueryParameter final String rsDomain,
-                                                    @QueryParameter final String rsfDomain,
-                                                    @QueryParameter final String ucDomain,
-                                                    @QueryParameter final String apiDomain,
                                                     @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
-            if (!downloadDomain.isEmpty()) {
+            accessKey = Util.fixEmptyAndTrim(accessKey);
+            bucketName = Util.fixEmptyAndTrim(bucketName);
+            upDomain = Util.fixEmptyAndTrim(upDomain);
+            rsDomain = Util.fixEmptyAndTrim(rsDomain);
+            rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
+            ucDomain = Util.fixEmptyAndTrim(ucDomain);
+            apiDomain = Util.fixEmptyAndTrim(apiDomain);
+            if (downloadDomain != null) {
                 try {
                     new URL("http://" + downloadDomain).openConnection().connect();
                 } catch (Exception err) {
@@ -173,8 +213,10 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckUpDomain(@QueryParameter final String upDomain) throws IOException, ServletException {
-            if (!upDomain.isEmpty()) {
+        @POST
+        public FormValidation doCheckUpDomain(@QueryParameter String upDomain) throws IOException, ServletException {
+            upDomain = Util.fixEmptyAndTrim(upDomain);
+            if (upDomain != null) {
                 try {
                     new URL("http://" + upDomain).openConnection().connect();
                 } catch (Exception err) {
@@ -184,8 +226,10 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckRsDomain(@QueryParameter final String rsDomain) throws IOException, ServletException {
-            if (!rsDomain.isEmpty()) {
+        @POST
+        public FormValidation doCheckRsDomain(@QueryParameter String rsDomain) throws IOException, ServletException {
+            rsDomain = Util.fixEmptyAndTrim(rsDomain);
+            if (rsDomain != null) {
                 try {
                     new URL("http://" + rsDomain).openConnection().connect();
                 } catch (Exception err) {
@@ -195,8 +239,10 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckRsfDomain(@QueryParameter final String rsfDomain) throws IOException, ServletException {
-            if (!rsfDomain.isEmpty()) {
+        @POST
+        public FormValidation doCheckRsfDomain(@QueryParameter String rsfDomain) throws IOException, ServletException {
+            rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
+            if (rsfDomain != null) {
                 try {
                     new URL("http://" + rsfDomain).openConnection().connect();
                 } catch (Exception err) {
@@ -206,8 +252,10 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckUcDomain(@QueryParameter final String ucDomain) throws IOException, ServletException {
-            if (!ucDomain.isEmpty()) {
+        @POST
+        public FormValidation doCheckUcDomain(@QueryParameter String ucDomain) throws IOException, ServletException {
+            ucDomain = Util.fixEmptyAndTrim(ucDomain);
+            if (ucDomain != null) {
                 try {
                     new URL("http://" + ucDomain).openConnection().connect();
                 } catch (Exception err) {
@@ -217,8 +265,10 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckApiDomain(@QueryParameter final String apiDomain) throws IOException, ServletException {
-            if (!apiDomain.isEmpty()) {
+        @POST
+        public FormValidation doCheckApiDomain(@QueryParameter String apiDomain) throws IOException, ServletException {
+            apiDomain = Util.fixEmptyAndTrim(apiDomain);
+            if (apiDomain != null) {
                 try {
                     new URL("http://" + apiDomain).openConnection().connect();
                 } catch (Exception err) {
@@ -254,10 +304,10 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                                             final String apiDomain, final boolean useHTTPs) {
             final BucketManager bucketManager = this.getBucketManager(accessKey, secretKey, upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs);
             if (bucketManager != null &&
-                    accessKey != null && !accessKey.isEmpty() &&
-                    secretKey != null && !secretKey.getPlainText().isEmpty() &&
-                    bucketName != null && !bucketName.isEmpty() &&
-                    (downloadDomain == null || downloadDomain.isEmpty())) {
+                    Util.fixEmptyAndTrim(accessKey) != null &&
+                    secretKey != null && Util.fixEmptyAndTrim(secretKey.getPlainText()) != null &&
+                    Util.fixEmptyAndTrim(bucketName) != null &&
+                    Util.fixEmptyAndTrim(downloadDomain) == null) {
                 try {
                     final String[] domainList = bucketManager.domainList(bucketName);
                     return domainList.length > 0;
@@ -285,8 +335,8 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
         @CheckForNull
         private Auth getAuth(final String accessKey, final Secret secretKey) {
-            if (accessKey == null || accessKey.isEmpty() ||
-                    secretKey == null || secretKey.getPlainText().isEmpty()) {
+            if (Util.fixEmptyAndTrim(accessKey) == null ||
+                    secretKey == null || Util.fixEmptyAndTrim(secretKey.getPlainText()) == null) {
                 return null;
             }
             return Auth.create(accessKey, secretKey.getPlainText());
@@ -295,13 +345,13 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         @Nonnull
         private Configuration getConfiguration(final String upDomain, final String rsDomain, final String rsfDomain,
                                                final String ucDomain, final String apiDomain, final boolean useHTTPs) {
-            if (rsDomain != null && !rsDomain.isEmpty() && !Configuration.defaultRsHost.equals(rsDomain)) {
+            if (Util.fixEmptyAndTrim(rsDomain) != null && !Configuration.defaultRsHost.equals(rsDomain)) {
                 Configuration.defaultRsHost = rsDomain;
             }
-            if (ucDomain != null && !ucDomain.isEmpty() && !Configuration.defaultUcHost.equals(ucDomain)) {
+            if (Util.fixEmptyAndTrim(ucDomain) != null && !Configuration.defaultUcHost.equals(ucDomain)) {
                 Configuration.defaultUcHost = ucDomain;
             }
-            if (apiDomain != null && !apiDomain.isEmpty() && !Configuration.defaultApiHost.equals(apiDomain)) {
+            if (Util.fixEmptyAndTrim(apiDomain) != null && !Configuration.defaultApiHost.equals(apiDomain)) {
                 Configuration.defaultApiHost = apiDomain;
             }
 
