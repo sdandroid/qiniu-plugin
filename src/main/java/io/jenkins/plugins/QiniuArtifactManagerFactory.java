@@ -106,6 +106,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                                                @QueryParameter String apiDomain,
                                                @QueryParameter final Secret secretKey,
                                                @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             accessKey = Util.fixEmptyAndTrim(accessKey);
             bucketName = Util.fixEmptyAndTrim(bucketName);
             upDomain = Util.fixEmptyAndTrim(upDomain);
@@ -134,6 +135,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                                                @QueryParameter String ucDomain,
                                                @QueryParameter String apiDomain,
                                                @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             accessKey = Util.fixEmptyAndTrim(accessKey);
             bucketName = Util.fixEmptyAndTrim(bucketName);
             upDomain = Util.fixEmptyAndTrim(upDomain);
@@ -162,6 +164,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                                                 @QueryParameter String apiDomain,
                                                 @QueryParameter final Secret secretKey,
                                                 @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             accessKey = Util.fixEmptyAndTrim(accessKey);
             bucketName = Util.fixEmptyAndTrim(bucketName);
             upDomain = Util.fixEmptyAndTrim(upDomain);
@@ -191,6 +194,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                                                     @QueryParameter String apiDomain,
                                                     @QueryParameter final Secret secretKey,
                                                     @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             accessKey = Util.fixEmptyAndTrim(accessKey);
             bucketName = Util.fixEmptyAndTrim(bucketName);
             upDomain = Util.fixEmptyAndTrim(upDomain);
@@ -215,6 +219,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
         @POST
         public FormValidation doCheckUpDomain(@QueryParameter String upDomain) throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             upDomain = Util.fixEmptyAndTrim(upDomain);
             if (upDomain != null) {
                 try {
@@ -228,6 +233,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
         @POST
         public FormValidation doCheckRsDomain(@QueryParameter String rsDomain) throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             rsDomain = Util.fixEmptyAndTrim(rsDomain);
             if (rsDomain != null) {
                 try {
@@ -241,6 +247,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
         @POST
         public FormValidation doCheckRsfDomain(@QueryParameter String rsfDomain) throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
             if (rsfDomain != null) {
                 try {
@@ -254,6 +261,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
         @POST
         public FormValidation doCheckUcDomain(@QueryParameter String ucDomain) throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             ucDomain = Util.fixEmptyAndTrim(ucDomain);
             if (ucDomain != null) {
                 try {
@@ -267,6 +275,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
         @POST
         public FormValidation doCheckApiDomain(@QueryParameter String apiDomain) throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             apiDomain = Util.fixEmptyAndTrim(apiDomain);
             if (apiDomain != null) {
                 try {
