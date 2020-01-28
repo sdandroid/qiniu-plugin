@@ -22,11 +22,12 @@
             <url>https://opensource.org/licenses/MIT</url>
         </license>
     </licenses>
-    <url>https://github.com/qiniu/${project.artifactId}-jenkins-plugin</url>
+    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
     <scm>
-        <connection>scm:git:git://github.com/qiniu/${project.artifactId}-jenkins-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:qiniu/${project.artifactId}-jenkins-plugin.git</developerConnection>
-        <url>https://github.com/qiniu/${project.artifactId}-jenkins-plugin</url>
+        <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
+        <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+      <tag>HEAD</tag>
     </scm>
     <repositories>
         <repository>
