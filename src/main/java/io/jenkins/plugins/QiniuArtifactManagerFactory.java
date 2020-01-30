@@ -42,6 +42,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                                        final boolean useHTTPs, final boolean infrequentStorage) {
         accessKey = Util.fixEmptyAndTrim(accessKey);
         bucketName = Util.fixEmptyAndTrim(bucketName);
+        downloadDomain = Util.fixEmptyAndTrim(downloadDomain);
         upDomain = Util.fixEmptyAndTrim(upDomain);
         rsDomain = Util.fixEmptyAndTrim(rsDomain);
         rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
@@ -53,6 +54,24 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             throw new IllegalArgumentException("secretKey must not be null or empty");
         } else if (bucketName == null) {
             throw new IllegalArgumentException("bucketName must not be null or empty");
+        }
+        if (upDomain == null) {
+            upDomain = "";
+        }
+        if (rsDomain == null) {
+            rsDomain = "";
+        }
+        if (rsfDomain == null) {
+            rsfDomain = "";
+        }
+        if (ucDomain == null) {
+            ucDomain = "";
+        }
+        if (apiDomain == null) {
+            apiDomain = "";
+        }
+        if (downloadDomain == null) {
+            downloadDomain = "";
         }
         final QiniuConfig config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain,
                 upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs, infrequentStorage, applyForAllJobs);
@@ -72,7 +91,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             this.config = config;
         }
         LOG.log(Level.INFO, "QiniuArtifactManagerFactory is configured: accessKey={0}, bucketName={1}, downloadDomain={2}",
-                new Object[]{this.config.getAccessKey(), this.config.getBucketName(), this.config.getDownloadDomain()});
+                new Object[]{accessKey, bucketName, downloadDomain});
     }
 
     @Nonnull
@@ -195,6 +214,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                                                     @QueryParameter final Secret secretKey,
                                                     @QueryParameter final boolean useHTTPs) throws IOException, ServletException {
             Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            downloadDomain = Util.fixEmptyAndTrim(downloadDomain);
             accessKey = Util.fixEmptyAndTrim(accessKey);
             bucketName = Util.fixEmptyAndTrim(bucketName);
             upDomain = Util.fixEmptyAndTrim(upDomain);
@@ -293,10 +313,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                                                                final String ucDomain, final String apiDomain,
                                                                final boolean useHTTPs) {
             final BucketManager bucketManager = this.getBucketManager(accessKey, secretKey, upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs);
-            if (bucketManager != null &&
-                    accessKey != null && !accessKey.isEmpty() &&
-                    secretKey != null && !secretKey.getPlainText().isEmpty() &&
-                    bucketName != null && !bucketName.isEmpty()) {
+            if (bucketManager != null && bucketName != null) {
                 try {
                     bucketManager.getBucketInfo(bucketName);
                 } catch (QiniuException e) {
@@ -313,10 +330,8 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
                                             final String apiDomain, final boolean useHTTPs) {
             final BucketManager bucketManager = this.getBucketManager(accessKey, secretKey, upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs);
             if (bucketManager != null &&
-                    Util.fixEmptyAndTrim(accessKey) != null &&
-                    secretKey != null && Util.fixEmptyAndTrim(secretKey.getPlainText()) != null &&
-                    Util.fixEmptyAndTrim(bucketName) != null &&
-                    Util.fixEmptyAndTrim(downloadDomain) == null) {
+                    bucketName != null &&
+                    downloadDomain == null) {
                 try {
                     final String[] domainList = bucketManager.domainList(bucketName);
                     return domainList.length > 0;
@@ -335,45 +350,74 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             Initializer.setAppName();
 
             final Auth auth = this.getAuth(accessKey, secretKey);
-            final Configuration config = this.getConfiguration(upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs);
             if (auth == null) {
                 return null;
             }
+            final Configuration config = this.getConfiguration(upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs);
             return new BucketManager(auth, config);
         }
 
         @CheckForNull
         private Auth getAuth(final String accessKey, final Secret secretKey) {
-            if (Util.fixEmptyAndTrim(accessKey) == null ||
-                    secretKey == null || Util.fixEmptyAndTrim(secretKey.getPlainText()) == null) {
+            String secretKeyPlainText = null;
+
+            if (secretKey != null) {
+                secretKeyPlainText = Util.fixEmptyAndTrim(secretKey.getPlainText());
+            }
+            if (accessKey == null || secretKeyPlainText == null) {
                 return null;
             }
-            return Auth.create(accessKey, secretKey.getPlainText());
+            return Auth.create(accessKey, secretKeyPlainText);
         }
 
         @Nonnull
-        private Configuration getConfiguration(final String upDomain, final String rsDomain, final String rsfDomain,
-                                               final String ucDomain, final String apiDomain, final boolean useHTTPs) {
-            if (Util.fixEmptyAndTrim(rsDomain) != null && !Configuration.defaultRsHost.equals(rsDomain)) {
+        private Configuration getConfiguration(String upDomain, String rsDomain, String rsfDomain,
+                                               String ucDomain, String apiDomain, final boolean useHTTPs) {
+            rsDomain = Util.fixEmptyAndTrim(rsDomain);
+            ucDomain = Util.fixEmptyAndTrim(ucDomain);
+            apiDomain = Util.fixEmptyAndTrim(apiDomain);
+            upDomain = Util.fixEmptyAndTrim(upDomain);
+            rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
+
+            if (rsDomain != null && !Configuration.defaultRsHost.equals(rsDomain)) {
                 Configuration.defaultRsHost = rsDomain;
             }
-            if (Util.fixEmptyAndTrim(ucDomain) != null && !Configuration.defaultUcHost.equals(ucDomain)) {
+            if (ucDomain != null && !Configuration.defaultUcHost.equals(ucDomain)) {
                 Configuration.defaultUcHost = ucDomain;
             }
-            if (Util.fixEmptyAndTrim(apiDomain) != null && !Configuration.defaultApiHost.equals(apiDomain)) {
+            if (apiDomain != null && !Configuration.defaultApiHost.equals(apiDomain)) {
                 Configuration.defaultApiHost = apiDomain;
             }
 
             final Configuration config = new Configuration();
             config.useHttpsDomains = useHTTPs;
-            config.region = new Region.Builder().
-                    accUpHost(upDomain).
-                    srcUpHost(upDomain).
-                    rsHost(rsDomain).
-                    rsfHost(rsfDomain).
-                    apiHost(apiDomain).
-                    build();
+            config.region = mayCreateRegion(upDomain, rsDomain, rsfDomain, apiDomain);
             return config;
+        }
+
+        private Region mayCreateRegion(final String upDomain, final String rsDomain, final String rsfDomain, final String apiDomain) {
+            boolean returnsNull = true;
+            Region.Builder regionBuilder = new Region.Builder();
+            if (upDomain != null) {
+                regionBuilder = regionBuilder.accUpHost(upDomain).srcUpHost(upDomain);
+                returnsNull = false;
+            }
+            if (rsDomain != null) {
+                regionBuilder = regionBuilder.rsHost(rsDomain);
+                returnsNull = false;
+            }
+            if (rsfDomain != null) {
+                regionBuilder = regionBuilder.rsfHost(rsfDomain);
+                returnsNull = false;
+            }
+            if (apiDomain != null) {
+                regionBuilder = regionBuilder.apiHost(apiDomain);
+                returnsNull = false;
+            }
+            if (returnsNull) {
+                return null;
+            }
+            return regionBuilder.build();
         }
     }
 

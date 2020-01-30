@@ -5,6 +5,7 @@ import com.qiniu.storage.Configuration;
 import com.qiniu.storage.Region;
 import com.qiniu.util.Auth;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.Util;
 import hudson.util.Secret;
 import javax.annotation.Nonnull;
 import java.io.Serializable;
@@ -55,26 +56,51 @@ public class QiniuConfig implements Serializable {
     @Nonnull
     @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD", justification = "I must set static variable here")
     public Configuration getConfiguration() {
-        if (!Configuration.defaultRsHost.equals(this.rsDomain)) {
-            Configuration.defaultRsHost = this.rsDomain;
+        final String rsDomain = Util.fixEmptyAndTrim(this.rsDomain);
+        final String ucDomain = Util.fixEmptyAndTrim(this.ucDomain);
+        final String apiDomain = Util.fixEmptyAndTrim(this.apiDomain);
+        final String upDomain = Util.fixEmptyAndTrim(this.upDomain);
+        final String rsfDomain = Util.fixEmptyAndTrim(this.rsfDomain);
+
+        if (rsDomain != null && !Configuration.defaultRsHost.equals(rsDomain)) {
+            Configuration.defaultRsHost = rsDomain;
         }
-        if (!Configuration.defaultUcHost.equals(this.ucDomain)) {
-            Configuration.defaultUcHost = this.ucDomain;
+        if (ucDomain != null && !Configuration.defaultUcHost.equals(ucDomain)) {
+            Configuration.defaultUcHost = ucDomain;
         }
-        if (!Configuration.defaultApiHost.equals(this.apiDomain)) {
-            Configuration.defaultApiHost = this.apiDomain;
+        if (apiDomain != null && !Configuration.defaultApiHost.equals(apiDomain)) {
+            Configuration.defaultApiHost = apiDomain;
         }
 
         final Configuration config = new Configuration();
         config.useHttpsDomains = this.useHTTPs;
-        config.region = new Region.Builder().
-                accUpHost(this.upDomain).
-                srcUpHost(this.upDomain).
-                rsHost(this.rsDomain).
-                rsfHost(this.rsfDomain).
-                apiHost(this.apiDomain).
-                build();
+        config.region = mayCreateRegion(upDomain, rsDomain, rsfDomain, apiDomain);
         return config;
+    }
+
+    private Region mayCreateRegion(final String upDomain, final String rsDomain, final String rsfDomain, final String apiDomain) {
+        boolean returnsNull = true;
+        Region.Builder regionBuilder = new Region.Builder();
+        if (upDomain != null) {
+            regionBuilder = regionBuilder.accUpHost(upDomain).srcUpHost(upDomain);
+            returnsNull = false;
+        }
+        if (rsDomain != null) {
+            regionBuilder = regionBuilder.rsHost(rsDomain);
+            returnsNull = false;
+        }
+        if (rsfDomain != null) {
+            regionBuilder = regionBuilder.rsfHost(rsfDomain);
+            returnsNull = false;
+        }
+        if (apiDomain != null) {
+            regionBuilder = regionBuilder.apiHost(apiDomain);
+            returnsNull = false;
+        }
+        if (returnsNull) {
+            return null;
+        }
+        return regionBuilder.build();
     }
 
     @Nonnull
