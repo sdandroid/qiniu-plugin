@@ -7,6 +7,7 @@ import com.qiniu.util.Auth;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Util;
 import hudson.util.Secret;
+
 import javax.annotation.Nonnull;
 import java.io.Serializable;
 
@@ -21,6 +22,10 @@ public class QiniuConfig implements Serializable {
     private final String rsDomain, rsfDomain, ucDomain, apiDomain;
 
     private final boolean useHTTPs, infrequentStorage, applyForAllJobs;
+
+    private static final String DEFAULT_RS_HOST = Configuration.defaultRsHost;
+    private static final String DEFAULT_API_HOST = Configuration.defaultApiHost;
+    private static final String DEFAULT_UC_HOST = Configuration.defaultUcHost;
 
     public QiniuConfig(@Nonnull final String accessKey, @Nonnull final Secret secretKey, @Nonnull final String bucketName,
                        @Nonnull final String objectNamePrefix, @Nonnull final String downloadDomain, @Nonnull final String upDomain,
@@ -64,12 +69,20 @@ public class QiniuConfig implements Serializable {
 
         if (rsDomain != null && !Configuration.defaultRsHost.equals(rsDomain)) {
             Configuration.defaultRsHost = rsDomain;
+        } else if (rsDomain == null) {
+            Configuration.defaultRsHost = DEFAULT_RS_HOST;
         }
+
         if (ucDomain != null && !Configuration.defaultUcHost.equals(ucDomain)) {
             Configuration.defaultUcHost = ucDomain;
+        } else if (ucDomain == null) {
+            Configuration.defaultUcHost = DEFAULT_UC_HOST;
         }
+
         if (apiDomain != null && !Configuration.defaultApiHost.equals(apiDomain)) {
             Configuration.defaultApiHost = apiDomain;
+        } else if (apiDomain == null) {
+            Configuration.defaultApiHost = DEFAULT_API_HOST;
         }
 
         final Configuration config = new Configuration();

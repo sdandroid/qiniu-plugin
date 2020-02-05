@@ -12,6 +12,7 @@ import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
+import sun.security.krb5.Config;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -23,6 +24,9 @@ import java.util.logging.Logger;
 @Restricted(NoExternalUse.class)
 class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     private static final Logger LOG = Logger.getLogger(QiniuUploader.class.getName());
+    private static final String DEFAULT_RS_HOST = Configuration.defaultRsHost;
+    private static final String DEFAULT_API_HOST = Configuration.defaultApiHost;
+    private static final String DEFAULT_UC_HOST = Configuration.defaultUcHost;
 
     private final String objectNamePrefix;
     private final QiniuArtifactManager.Marker marker;
@@ -81,12 +85,20 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
 
         if (rsDomain != null && !Configuration.defaultRsHost.equals(rsDomain)) {
             Configuration.defaultRsHost = rsDomain;
+        } else if (rsDomain == null) {
+            Configuration.defaultRsHost = DEFAULT_RS_HOST;
         }
+
         if (ucDomain != null && !Configuration.defaultUcHost.equals(ucDomain)) {
             Configuration.defaultUcHost = ucDomain;
+        } else if (ucDomain == null) {
+            Configuration.defaultUcHost = DEFAULT_UC_HOST;
         }
+
         if (apiDomain != null && !Configuration.defaultApiHost.equals(apiDomain)) {
             Configuration.defaultApiHost = apiDomain;
+        } else if (apiDomain == null) {
+            Configuration.defaultApiHost = DEFAULT_API_HOST;
         }
 
         final Configuration config = new Configuration();
