@@ -3,8 +3,8 @@
     <f:entry title="${%IncludeFilesGlob}" field="includeFilesGlob"><f:textbox /></f:entry>
     <f:advanced>
         <f:entry title="${%ExcludeFilesGlob}" field="excludeFilesGlob"><f:textbox /></f:entry>
-        <f:entry title="${%DoNotFailIfArchiveNothing}" field="doNotFailIfArchiveNothing"><f:checkbox /></f:entry>
-        <f:entry title="${%ArchiveIfBuildIsSuccessful}" field="archiveIfBuildIsSuccessful"><f:checkbox /></f:entry>
+        <f:entry title="${%AllowEmptyArchive}" field="allowEmptyArchive"><f:checkbox /></f:entry>
+        <f:entry title="${%OnlyIfSuccessful}" field="onlyIfSuccessful"><f:checkbox /></f:entry>
         <f:entry title="${%UseDefaultExcludes}" field="useDefaultExcludes"><f:checkbox /></f:entry>
         <f:entry title="${%CaseSensitive}" field="caseSensitive"><f:checkbox /></f:entry>
     </f:advanced>
