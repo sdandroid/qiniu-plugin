@@ -1,17 +1,23 @@
 # 七牛云 Jenkins 插件
 
+## 安装
+
+从 Jenkins 插件列表中找到 Qiniu 插件，安装
+
+![七牛插件安装](https://user-images.githubusercontent.com/321962/73899773-96ddd180-48c8-11ea-8395-4acf746e2817.png)
+
 ## 构建
 
 克隆代码仓库
 
 ```bash
-git clone git@github.com:qiniu/qiniu-jenkins-plugin.git
+git clone git@github.com:jenkinsci/qiniu-plugin.git
 ```
 
 进入插件目录并构建插件
 
 ```bash
-cd qiniu-jenkins-plugin
+cd qiniu-plugin
 mvn -Djenkins.version=2.121.3 -Duse-jenkins-bom package
 ```
 
