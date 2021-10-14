@@ -43,7 +43,7 @@ public class QiniuArtifactManager extends ArtifactManager {
         this.standardArtifactManager = new StandardArtifactManager(run);
         this.marker = new Marker(this.objectNamePrefixWithBuildNumber, this.config);
         LOG.log(Level.INFO, "QiniuArtifactManager is constructed, accessKey={0}, prefix={1}",
-                new Object[]{this.config.getAccessKey(), this.objectNamePrefixWithBuildNumber});
+                new Object[] { this.config.getAccessKey(), this.objectNamePrefixWithBuildNumber });
     }
 
     @Override
@@ -68,7 +68,8 @@ public class QiniuArtifactManager extends ArtifactManager {
     }
 
     @Override
-    public void archive(FilePath workspace, Launcher launcher, BuildListener buildListener, Map<String, String> pathMap) throws IOException, InterruptedException {
+    public void archive(FilePath workspace, Launcher launcher, BuildListener buildListener, Map<String, String> pathMap)
+            throws IOException, InterruptedException {
         if (!this.config.isApplyForAllJobs() && !this.marker.didUseQiniuArtifactArchiver()) {
             LOG.log(Level.INFO, "StandardArtifactManager::archive()");
             this.standardArtifactManager.archive(workspace, launcher, buildListener, pathMap);
@@ -84,11 +85,15 @@ public class QiniuArtifactManager extends ArtifactManager {
             final String filePath = entry.getValue();
             artifacts.put(objectNameWithoutPrefix, filePath);
         }
-        workspace.act(new QiniuUploader(this.config, this.marker, artifacts, this.objectNamePrefixWithBuildNumber, buildListener));
+        workspace.act(new QiniuUploader(this.config, this.marker, artifacts, this.objectNamePrefixWithBuildNumber,
+                buildListener));
     }
 
     @Override
     public boolean delete() throws IOException, InterruptedException {
+        if (!this.config.isDeleteArtifacts()) {
+            return false;
+        }
         if (!this.marker.didUseQiniuArtifactArchiver()) {
             LOG.log(Level.INFO, "StandardArtifactManager::delete()");
             return this.standardArtifactManager.delete();
@@ -108,7 +113,8 @@ public class QiniuArtifactManager extends ArtifactManager {
             return this.standardArtifactManager.root();
         }
         LOG.log(Level.INFO, "QiniuArtifactManager::root(): prefix={0}", this.objectNamePrefixWithBuildNumber);
-        final QiniuFileSystem qiniuFileSystem = QiniuFileSystem.create(this.config, this.objectNamePrefixWithBuildNumber);
+        final QiniuFileSystem qiniuFileSystem = QiniuFileSystem.create(this.config,
+                this.objectNamePrefixWithBuildNumber);
         return new QiniuFile(qiniuFileSystem, null);
     }
 
@@ -143,9 +149,8 @@ public class QiniuArtifactManager extends ArtifactManager {
         public void useQiniuArtifactArchiver() throws IOException {
             final UploadManager uploadManager = new UploadManager(this.config.getConfiguration());
             final Auth auth = Auth.create(this.config.getAccessKey(), this.config.getSecretKey().getPlainText());
-            final String uploadToken = auth.uploadToken(
-                    this.config.getBucketName(), null,
-                    24 * 3600, new StringMap().put("fileType", 1).put("insertOnly", 0));
+            final String uploadToken = auth.uploadToken(this.config.getBucketName(), null, 24 * 3600,
+                    new StringMap().put("fileType", 1).put("insertOnly", 0));
             Initializer.setAppName();
             uploadManager.put("{}".getBytes("UTF-8"), this.objectName, uploadToken, null, null, true);
         }
