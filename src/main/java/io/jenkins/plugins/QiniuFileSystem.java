@@ -362,9 +362,13 @@ class QiniuFileSystem implements Serializable {
         return this.config;
     }
 
-    @CheckForNull
+    @Nonnull
     public String getObjectNamePrefix() {
-        return this.objectNamePrefix;
+        if (this.objectNamePrefix == null) {
+            return "";
+        } else {
+            return this.objectNamePrefix;
+        }
     }
 
     @Nonnull
@@ -396,7 +400,7 @@ class QiniuFileSystem implements Serializable {
     }
 
     @Nonnull
-    static Path fromObjectNameToFileSystemPath(@Nonnull final String objectName) throws InvalidPathError {
+    static Path fromObjectNameToFileSystemPath(final String objectName) throws InvalidPathError {
         final String[] segments = objectName.split(Pattern.quote(SEPARATOR));
         switch (segments.length) {
             case 0:

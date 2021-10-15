@@ -37,7 +37,7 @@ public class QiniuFile extends VirtualFile {
                 objectName = this.objectName.toString();
             }
             final String objectNamePrefix = this.qiniuFileSystem.getObjectNamePrefix();
-            if (objectNamePrefix != null && !objectNamePrefix.isEmpty()) {
+            if (!objectNamePrefix.isEmpty()) {
                 final Path path = QiniuFileSystem
                         .fromObjectNameToFileSystemPath(this.qiniuFileSystem.getObjectNamePrefix());
                 return path.resolve(QiniuFileSystem.fromObjectNameToFileSystemPath(objectName));
