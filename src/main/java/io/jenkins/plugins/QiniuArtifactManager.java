@@ -16,7 +16,6 @@ import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import javax.annotation.Nonnull;
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -57,13 +56,13 @@ public class QiniuArtifactManager extends ArtifactManager {
     @Nonnull
     private String generateObjectNamePrefixWithBuildNumber(@Nonnull Run<?, ?> run) {
         String n = this.config.getObjectNamePrefix();
-        if (!n.isEmpty() && !n.endsWith(File.separator)) {
-            n += File.separator;
+        if (!n.isEmpty() && !n.endsWith(QiniuFileSystem.SEPARATOR)) {
+            n += QiniuFileSystem.SEPARATOR;
         }
         n += run.getParent().getFullName();
-        n += File.separator;
+        n += QiniuFileSystem.SEPARATOR;
         n += run.getId();
-        n += File.separator;
+        n += QiniuFileSystem.SEPARATOR;
         return n;
     }
 
@@ -82,11 +81,10 @@ public class QiniuArtifactManager extends ArtifactManager {
         final Map<String, String> artifacts = new HashMap<>();
         for (Map.Entry<String, String> entry : pathMap.entrySet()) {
             final String objectNameWithoutPrefix = entry.getKey();
-            final String filePath = entry.getValue();
+            final String filePath = QiniuFileSystem.fromFileSystemPathToObjectName(entry.getValue());
             artifacts.put(objectNameWithoutPrefix, filePath);
         }
-        workspace.act(new QiniuUploader(this.config, this.marker, artifacts, this.objectNamePrefixWithBuildNumber,
-                buildListener));
+        workspace.act(new QiniuUploader(this.config, artifacts, this.objectNamePrefixWithBuildNumber, buildListener));
     }
 
     @Override
@@ -162,7 +160,7 @@ public class QiniuArtifactManager extends ArtifactManager {
         @Nonnull
         private String getMarkObjectName(@Nonnull final String objectNamePrefix) {
             String name = objectNamePrefix;
-            while (name.endsWith(File.separator)) {
+            while (name.endsWith(QiniuFileSystem.SEPARATOR)) {
                 name = name.substring(0, name.length() - 1);
             }
             return name + ".qiniu-artifact-archiver";

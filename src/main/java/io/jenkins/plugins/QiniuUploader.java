@@ -12,7 +12,6 @@ import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
-import sun.security.krb5.Config;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -29,16 +28,13 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     private static final String DEFAULT_UC_HOST = Configuration.defaultUcHost;
 
     private final String objectNamePrefix;
-    private final QiniuArtifactManager.Marker marker;
     private final QiniuConfig config;
     private final Map<String, String> artifactURLs;
     private final TaskListener listener;
 
-    QiniuUploader(@Nonnull QiniuConfig config, @Nonnull QiniuArtifactManager.Marker marker,
-                  @Nonnull Map<String, String> artifactURLs, @Nonnull String objectNamePrefix,
-                  @Nonnull TaskListener listener) {
+    QiniuUploader(@Nonnull QiniuConfig config, @Nonnull Map<String, String> artifactURLs,
+            @Nonnull String objectNamePrefix, @Nonnull TaskListener listener) {
         this.config = config;
-        this.marker = marker;
         this.artifactURLs = artifactURLs;
         this.objectNamePrefix = objectNamePrefix;
         this.listener = listener;
@@ -62,10 +58,10 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
 
         try {
             for (Map.Entry<String, String> entry : this.artifactURLs.entrySet()) {
-                final String objectName = this.objectNamePrefix + entry.getKey();
-                final File file = new File(root, entry.getValue());
+                final String objectName = this.objectNamePrefix + entry.getValue();
+                final File file = new File(root, entry.getKey());
                 uploadManager.put(file, objectName, uploadToken, null, null, true);
-                LOG.log(Level.INFO, "Qiniu upload {0} to {1}", new Object[]{file.getAbsolutePath(), objectName});
+                LOG.log(Level.INFO, "Qiniu upload {0} to {1}", new Object[] { file.getAbsolutePath(), objectName });
             }
         } finally {
             this.listener.getLogger().flush();
@@ -107,7 +103,8 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
         return config;
     }
 
-    private Region mayCreateRegion(final String upDomain, final String rsDomain, final String rsfDomain, final String apiDomain) {
+    private Region mayCreateRegion(final String upDomain, final String rsDomain, final String rsfDomain,
+            final String apiDomain) {
         boolean returnsNull = true;
         Region.Builder regionBuilder = new Region.Builder();
         if (upDomain != null) {
