@@ -1,10 +1,8 @@
 package io.jenkins.plugins;
 
 import com.qiniu.storage.BucketManager;
-import com.qiniu.storage.Configuration;
 import com.qiniu.storage.model.FileInfo;
 import com.qiniu.storage.model.FileListing;
-import com.qiniu.util.Auth;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
@@ -22,37 +20,27 @@ import java.util.regex.Pattern;
 @Restricted(NoExternalUse.class)
 class QiniuFileSystem implements Serializable {
     private static final Logger LOG = Logger.getLogger(QiniuFileSystem.class.getName());
+    static final String SEPARATOR = "/";
 
     @Nonnull
     private QiniuConfig config;
     @Nullable
-    private Path objectNamePrefix;
+    private String objectNamePrefix;
     @Nonnull
     private DirectoryNode rootNode;
     @Nullable
     private IOException ioException;
 
-    QiniuFileSystem(@Nonnull final QiniuConfig config, @Nonnull final Path objectNamePrefix) {
+    QiniuFileSystem(@Nonnull final QiniuConfig config, @Nonnull final String objectNamePrefix) {
         this.config = config;
         this.objectNamePrefix = objectNamePrefix;
         this.rootNode = new DirectoryNode("", this, null);
         initNodes();
     }
 
-    QiniuFileSystem(@Nonnull final QiniuConfig config, @Nonnull final IOException ioException) {
-        this.config = config;
-        this.objectNamePrefix = null;
-        this.rootNode = new DirectoryNode("", this, null);
-        this.ioException = ioException;
-    }
-
     @Nonnull
     static QiniuFileSystem create(@Nonnull final QiniuConfig config, @Nonnull final String objectNamePrefix) {
-        try {
-            return new QiniuFileSystem(config, toPath(objectNamePrefix));
-        } catch (InvalidPathError e) {
-            return new QiniuFileSystem(config, e);
-        }
+        return new QiniuFileSystem(config, objectNamePrefix);
     }
 
     private void initNodes() {
@@ -60,19 +48,21 @@ class QiniuFileSystem implements Serializable {
         final BucketManager bucketManager = this.config.getBucketManager();
         String marker = null;
         String prefix = this.objectNamePrefix.toString();
-        if (!prefix.endsWith(File.separator)) {
-            prefix += File.separator;
+        if (!prefix.isEmpty() && !prefix.endsWith(SEPARATOR)) {
+            prefix += SEPARATOR;
         }
         try {
             for (;;) {
                 LOG.log(Level.INFO, "QiniuFileSystem::{0}::list(), prefix={1}, marker={2}",
-                        new Object[]{this.objectNamePrefix, prefix, marker});
-                final FileListing list = bucketManager.listFiles(this.config.getBucketName(), prefix, marker, 1000, null);
+                        new Object[] { this.objectNamePrefix, prefix, marker });
+                final FileListing list = bucketManager.listFiles(this.config.getBucketName(), prefix, marker, 1000,
+                        null);
                 if (list.items != null) {
                     for (FileInfo metadata : list.items) {
-                        final Path path = this.objectNamePrefix.relativize(toPath(metadata.key));
+                        final Path path = fromObjectNameToFileSystemPath(this.objectNamePrefix)
+                                .relativize(fromObjectNameToFileSystemPath(metadata.key));
                         LOG.log(Level.INFO, "QiniuFileSystem::{0}::list(), key={1}",
-                                new Object[]{this.objectNamePrefix, path.toString()});
+                                new Object[] { this.objectNamePrefix, path.toString() });
                         this.createFileNodeByPath(path, metadata);
                     }
                 }
@@ -82,14 +72,15 @@ class QiniuFileSystem implements Serializable {
                 }
             }
         } catch (IOException e) {
-            LOG.log(Level.INFO, "QiniuFileSystem::{0}::list() error: {1}", new Object[]{this.objectNamePrefix, e});
+            LOG.log(Level.INFO, "QiniuFileSystem::{0}::list() error: {1}", new Object[] { this.objectNamePrefix, e });
             this.ioException = e;
         }
         LOG.log(Level.INFO, "QiniuFileSystem::{0}::list() done", this.objectNamePrefix);
     }
 
     @CheckForNull
-    Node getNodeByPath(@Nonnull Path path, boolean createDirectory, boolean createNodeAsDirectory) throws InvalidPathError {
+    Node getNodeByPath(@Nonnull Path path, boolean createDirectory, boolean createNodeAsDirectory)
+            throws InvalidPathError {
         DirectoryNode currentNode = this.rootNode;
         for (int i = 0; i < path.getNameCount(); i++) {
             final String currentNodeName = path.getName(i).toString();
@@ -101,7 +92,8 @@ class QiniuFileSystem implements Serializable {
                     currentNode = currentNode.addChildDirectoryNode(currentNodeName);
                     LOG.log(Level.INFO, "create directory node: {0}", currentNode.getPath().toString());
                 } else {
-                    throw new InvalidPathError("Path " + path.toString() + " is invalid, file " + path.getName(i).toString() + " is not directory");
+                    throw new InvalidPathError("Path " + path.toString() + " is invalid, file "
+                            + path.getName(i).toString() + " is not directory");
                 }
             } else if (createNodeAsDirectory && newCurrentNode == null) {
                 currentNode = currentNode.addChildDirectoryNode(currentNodeName);
@@ -120,7 +112,8 @@ class QiniuFileSystem implements Serializable {
         if (node != null && node.isFile()) {
             return (FileNode) node;
         } else {
-            throw new InvalidPathError("Path " + path.toString() + " is invalid, file " + path.getFileName() + " is not a file");
+            throw new InvalidPathError(
+                    "Path " + path.toString() + " is invalid, file " + path.getFileName() + " is not a file");
         }
     }
 
@@ -130,7 +123,8 @@ class QiniuFileSystem implements Serializable {
         if (node != null && node.isDirectory()) {
             return (DirectoryNode) node;
         } else {
-            throw new InvalidPathError("Path " + path.toString() + " is invalid, file " + path.getFileName() + " is not a directory");
+            throw new InvalidPathError(
+                    "Path " + path.toString() + " is invalid, file " + path.getFileName() + " is not a directory");
         }
     }
 
@@ -187,11 +181,10 @@ class QiniuFileSystem implements Serializable {
         String marker = null;
         String prefix = "";
         if (this.objectNamePrefix != null) {
-            prefix = this.objectNamePrefix.toString();
+            prefix = this.objectNamePrefix;
         }
-
-        if (!prefix.endsWith(File.separator)) {
-            prefix += File.separator;
+        if (!prefix.isEmpty() && !prefix.endsWith(SEPARATOR)) {
+            prefix += SEPARATOR;
         }
 
         for (;;) {
@@ -232,7 +225,8 @@ class QiniuFileSystem implements Serializable {
         @Nonnull
         final String nodeName;
 
-        Node(@Nonnull final String nodeName, @Nonnull final QiniuFileSystem fileSystem, @Nullable final DirectoryNode parentNode) {
+        Node(@Nonnull final String nodeName, @Nonnull final QiniuFileSystem fileSystem,
+                @Nullable final DirectoryNode parentNode) {
             this.nodeName = nodeName;
             this.fileSystem = fileSystem;
             this.parentNode = parentNode;
@@ -254,6 +248,7 @@ class QiniuFileSystem implements Serializable {
         }
 
         abstract boolean isFile();
+
         abstract boolean isDirectory();
 
         @Nonnull
@@ -271,7 +266,8 @@ class QiniuFileSystem implements Serializable {
         @Nonnull
         private final Map<String, Node> childrenNodes;
 
-        DirectoryNode(@Nonnull final String nodeName, @Nonnull final QiniuFileSystem fileSystem, @Nullable final DirectoryNode parentNode) {
+        DirectoryNode(@Nonnull final String nodeName, @Nonnull final QiniuFileSystem fileSystem,
+                @Nullable final DirectoryNode parentNode) {
             super(nodeName, fileSystem, parentNode);
             this.childrenNodes = new HashMap<>();
         }
@@ -340,7 +336,7 @@ class QiniuFileSystem implements Serializable {
         private final FileInfo metadata;
 
         FileNode(@Nonnull final String nodeName, @Nonnull final FileInfo metadata,
-                 @Nonnull final QiniuFileSystem fileSystem, @Nonnull final DirectoryNode parentNode) {
+                @Nonnull final QiniuFileSystem fileSystem, @Nonnull final DirectoryNode parentNode) {
             super(nodeName, fileSystem, parentNode);
             this.metadata = metadata;
         }
@@ -362,26 +358,17 @@ class QiniuFileSystem implements Serializable {
     }
 
     @Nonnull
-    static Path toPath(@Nonnull final String objectName) throws InvalidPathError {
-        final String[] segments = objectName.split(Pattern.quote(File.separator));
-        switch (segments.length) {
-        case 0:
-            throw new InvalidPathError("Path is empty");
-        case 1:
-            return FileSystems.getDefault().getPath(segments[0]);
-        default:
-            return FileSystems.getDefault().getPath(segments[0], Arrays.copyOfRange(segments, 1, segments.length));
-        }
-    }
-
-    @Nonnull
     public QiniuConfig getConfig() {
         return this.config;
     }
 
-    @CheckForNull
-    public Path getObjectNamePrefix() {
-        return this.objectNamePrefix;
+    @Nonnull
+    public String getObjectNamePrefix() {
+        if (this.objectNamePrefix == null) {
+            return "";
+        } else {
+            return this.objectNamePrefix;
+        }
     }
 
     @Nonnull
@@ -391,7 +378,7 @@ class QiniuFileSystem implements Serializable {
 
     private void writeObject(ObjectOutputStream out) throws IOException {
         out.writeObject(this.config);
-        SerializeUtils.serializePath(out, this.objectNamePrefix);
+        out.writeUTF(this.objectNamePrefix);
         if (this.ioException != null) {
             out.writeBoolean(true);
             out.writeObject(this.ioException.getMessage());
@@ -402,7 +389,7 @@ class QiniuFileSystem implements Serializable {
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         this.config = (QiniuConfig) in.readObject();
-        this.objectNamePrefix = SerializeUtils.deserializePath(in);
+        this.objectNamePrefix = in.readUTF();
         if (in.readBoolean()) {
             this.ioException = new IOException((String) in.readObject());
         } else {
@@ -410,5 +397,41 @@ class QiniuFileSystem implements Serializable {
         }
         this.rootNode = new DirectoryNode("", this, null);
         initNodes();
+    }
+
+    @Nonnull
+    static Path fromObjectNameToFileSystemPath(final String objectName) throws InvalidPathError {
+        final String[] segments = objectName.split(Pattern.quote(SEPARATOR));
+        switch (segments.length) {
+            case 0:
+                throw new InvalidPathError("Path is empty");
+            case 1:
+                return FileSystems.getDefault().getPath(segments[0]);
+            default:
+                return FileSystems.getDefault().getPath(segments[0], Arrays.copyOfRange(segments, 1, segments.length));
+        }
+    }
+
+    static String fromFileSystemPathToObjectName(final Path filePath) {
+        if (filePath == null) {
+            return null;
+        }
+        return fromFileSystemPathToObjectName(filePath.normalize().toString());
+    }
+
+    static String fromFileSystemPathToObjectName(final String filePath) {
+        if (filePath == null) {
+            return null;
+        }
+        final String[] segments = filePath.split(Pattern.quote(File.separator));
+        if (segments.length > 0) {
+            final StringJoiner joiner = new StringJoiner("/");
+            for (final String segment : segments) {
+                joiner.add(segment);
+            }
+            return joiner.toString();
+        } else {
+            return null;
+        }
     }
 }

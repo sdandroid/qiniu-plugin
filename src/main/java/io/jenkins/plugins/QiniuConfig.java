@@ -21,17 +21,18 @@ public class QiniuConfig implements Serializable {
     @Nonnull
     private final String rsDomain, rsfDomain, ucDomain, apiDomain;
 
-    private final boolean useHTTPs, infrequentStorage, applyForAllJobs;
+    private final boolean useHTTPs, infrequentStorage, deleteArtifacts, applyForAllJobs;
 
     private static final String DEFAULT_RS_HOST = Configuration.defaultRsHost;
     private static final String DEFAULT_API_HOST = Configuration.defaultApiHost;
     private static final String DEFAULT_UC_HOST = Configuration.defaultUcHost;
 
-    public QiniuConfig(@Nonnull final String accessKey, @Nonnull final Secret secretKey, @Nonnull final String bucketName,
-                       @Nonnull final String objectNamePrefix, @Nonnull final String downloadDomain, @Nonnull final String upDomain,
-                       @Nonnull final String rsDomain, @Nonnull final String rsfDomain,
-                       @Nonnull final String ucDomain, @Nonnull final String apiDomain,
-                       final boolean useHTTPs, final boolean infrequentStorage, final boolean applyForAllJobs) {
+    public QiniuConfig(@Nonnull final String accessKey, @Nonnull final Secret secretKey,
+            @Nonnull final String bucketName, @Nonnull final String objectNamePrefix,
+            @Nonnull final String downloadDomain, @Nonnull final String upDomain, @Nonnull final String rsDomain,
+            @Nonnull final String rsfDomain, @Nonnull final String ucDomain, @Nonnull final String apiDomain,
+            final boolean useHTTPs, final boolean infrequentStorage, final boolean deleteArtifacts,
+            final boolean applyForAllJobs) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.bucketName = bucketName;
@@ -44,6 +45,7 @@ public class QiniuConfig implements Serializable {
         this.apiDomain = apiDomain;
         this.useHTTPs = useHTTPs;
         this.infrequentStorage = infrequentStorage;
+        this.deleteArtifacts = deleteArtifacts;
         this.applyForAllJobs = applyForAllJobs;
     }
 
@@ -91,7 +93,8 @@ public class QiniuConfig implements Serializable {
         return config;
     }
 
-    private Region mayCreateRegion(final String upDomain, final String rsDomain, final String rsfDomain, final String apiDomain) {
+    private Region mayCreateRegion(final String upDomain, final String rsDomain, final String rsfDomain,
+            final String apiDomain) {
         boolean returnsNull = true;
         Region.Builder regionBuilder = new Region.Builder();
         if (upDomain != null) {
@@ -174,8 +177,11 @@ public class QiniuConfig implements Serializable {
         return this.infrequentStorage;
     }
 
+    public boolean isDeleteArtifacts() {
+        return this.deleteArtifacts;
+    }
+
     public boolean isApplyForAllJobs() {
         return this.applyForAllJobs;
     }
 }
-

@@ -36,10 +36,8 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
     private boolean allowEmptyArchive, onlyIfSuccessful, useDefaultExcludes, caseSensitive;
 
     @DataBoundConstructor
-    public QiniuPublisher(
-            @Nonnull String includeFilesGlob, @Nonnull String excludeFilesGlob,
-            boolean allowEmptyArchive, boolean onlyIfSuccessful,
-            boolean useDefaultExcludes, boolean caseSensitive) {
+    public QiniuPublisher(@Nonnull String includeFilesGlob, @Nonnull String excludeFilesGlob, boolean allowEmptyArchive,
+            boolean onlyIfSuccessful, boolean useDefaultExcludes, boolean caseSensitive) {
         this.includeFilesGlob = includeFilesGlob;
         this.excludeFilesGlob = excludeFilesGlob;
         this.allowEmptyArchive = allowEmptyArchive;
@@ -49,9 +47,8 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(
-            @Nonnull Run<?, ?> run, @Nonnull FilePath filePath,
-            @Nonnull Launcher launcher, @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
+    public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath filePath, @Nonnull Launcher launcher,
+            @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
         final PrintStream logger = taskListener.getLogger();
         final EnvVars envVars = run.getEnvironment(taskListener);
 
@@ -67,10 +64,8 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         }
         logger.println(Messages.QiniuPublisher_ARCHIVING_ARTIFACTS());
 
-        final ListFiles listFiles = new ListFiles(
-                envVars.expand(this.includeFilesGlob),
-                envVars.expand(this.excludeFilesGlob),
-                this.useDefaultExcludes, this.caseSensitive);
+        final ListFiles listFiles = new ListFiles(envVars.expand(this.includeFilesGlob),
+                envVars.expand(this.excludeFilesGlob), this.useDefaultExcludes, this.caseSensitive);
         final Map<String, String> files = filePath.act(listFiles);
 
         if (!files.isEmpty()) {
@@ -80,7 +75,8 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
         } else {
             if (result == null || result.isBetterOrEqualTo(Result.UNSTABLE)) {
                 try {
-                    String msg = filePath.validateAntFileMask(this.includeFilesGlob, FilePath.VALIDATE_ANT_FILE_MASK_BOUND, this.caseSensitive);
+                    String msg = filePath.validateAntFileMask(this.includeFilesGlob,
+                            FilePath.VALIDATE_ANT_FILE_MASK_BOUND, this.caseSensitive);
                     if (msg != null) {
                         logger.println(msg);
                     }
@@ -163,11 +159,11 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            final QiniuArtifactManagerFactory factory = ArtifactManagerConfiguration.
-                    get().getArtifactManagerFactories().get(QiniuArtifactManagerFactory.class);
+            final QiniuArtifactManagerFactory factory = ArtifactManagerConfiguration.get().getArtifactManagerFactories()
+                    .get(QiniuArtifactManagerFactory.class);
             if (factory == null) {
-                throw new IllegalStateException("Failed to get QiniuArtifactManagerFactory " +
-                        "from ArtifactManagerConfiguration.get().getArtifactManagerFactories()");
+                throw new IllegalStateException("Failed to get QiniuArtifactManagerFactory "
+                        + "from ArtifactManagerConfiguration.get().getArtifactManagerFactories()");
             }
             LOG.log(Level.INFO, "QiniuPublisher::DescriptorImpl.isApplicable(): {0}", !factory.isApplyForAllJobs());
             return !factory.isApplyForAllJobs();
