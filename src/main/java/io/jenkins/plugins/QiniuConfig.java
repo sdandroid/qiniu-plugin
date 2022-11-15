@@ -1,15 +1,18 @@
 package io.jenkins.plugins;
 
+import java.io.Serializable;
+
+import javax.annotation.Nonnull;
+
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
+import com.qiniu.storage.Configuration.ResumableUploadAPIVersion;
 import com.qiniu.storage.Region;
 import com.qiniu.util.Auth;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Util;
 import hudson.util.Secret;
-
-import javax.annotation.Nonnull;
-import java.io.Serializable;
 
 public class QiniuConfig implements Serializable {
     @Nonnull
@@ -22,6 +25,8 @@ public class QiniuConfig implements Serializable {
     private final String rsDomain, rsfDomain, ucDomain, apiDomain;
 
     private final boolean useHTTPs, infrequentStorage, deleteArtifacts, applyForAllJobs;
+    private final int multipartUploadConcurrency, multipartUploadPartSize, multipartUploadThreshold;
+    private final int connectTimeout, readTimeout, writeTimeout, retryCount;
 
     private static final String DEFAULT_RS_HOST = Configuration.defaultRsHost;
     private static final String DEFAULT_API_HOST = Configuration.defaultApiHost;
@@ -32,7 +37,9 @@ public class QiniuConfig implements Serializable {
             @Nonnull final String downloadDomain, @Nonnull final String upDomain, @Nonnull final String rsDomain,
             @Nonnull final String rsfDomain, @Nonnull final String ucDomain, @Nonnull final String apiDomain,
             final boolean useHTTPs, final boolean infrequentStorage, final boolean deleteArtifacts,
-            final boolean applyForAllJobs) {
+            final boolean applyForAllJobs,
+            final int multipartUploadConcurrency, final int multipartUploadPartSize, final int multipartUploadThreshold,
+            final int connectTimeout, final int readTimeout, final int writeTimeout, final int retryCount) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.bucketName = bucketName;
@@ -47,6 +54,13 @@ public class QiniuConfig implements Serializable {
         this.infrequentStorage = infrequentStorage;
         this.deleteArtifacts = deleteArtifacts;
         this.applyForAllJobs = applyForAllJobs;
+        this.multipartUploadConcurrency = multipartUploadConcurrency;
+        this.multipartUploadPartSize = multipartUploadPartSize;
+        this.multipartUploadThreshold = multipartUploadThreshold;
+        this.connectTimeout = connectTimeout;
+        this.readTimeout = readTimeout;
+        this.writeTimeout = writeTimeout;
+        this.retryCount = retryCount;
     }
 
     @Nonnull
@@ -88,7 +102,15 @@ public class QiniuConfig implements Serializable {
         }
 
         final Configuration config = new Configuration();
+        config.resumableUploadAPIVersion = ResumableUploadAPIVersion.V2;
+        config.resumableUploadAPIV2BlockSize = this.multipartUploadPartSize * 1024 * 1024;
+        config.resumableUploadMaxConcurrentTaskCount = this.multipartUploadConcurrency;
+        config.putThreshold = this.multipartUploadThreshold * 1024 * 1024;
+        config.connectTimeout = this.connectTimeout;
+        config.readTimeout = this.readTimeout;
+        config.writeTimeout = this.writeTimeout;
         config.useHttpsDomains = this.useHTTPs;
+        config.retryMax = this.retryCount;
         config.region = mayCreateRegion(upDomain, rsDomain, rsfDomain, apiDomain);
         return config;
     }
@@ -183,5 +205,33 @@ public class QiniuConfig implements Serializable {
 
     public boolean isApplyForAllJobs() {
         return this.applyForAllJobs;
+    }
+
+    public int getMultipartUploadConcurrency() {
+        return this.multipartUploadConcurrency;
+    }
+
+    public int getMultipartUploadPartSize() {
+        return this.multipartUploadPartSize;
+    }
+
+    public int getMultipartUploadThreshold() {
+        return this.multipartUploadThreshold;
+    }
+
+    public int getConnectTimeout() {
+        return this.connectTimeout;
+    }
+
+    public int getReadTimeout() {
+        return this.readTimeout;
+    }
+
+    public int getWriteTimeout() {
+        return this.writeTimeout;
+    }
+
+    public int getRetryCount() {
+        return this.retryCount;
     }
 }
