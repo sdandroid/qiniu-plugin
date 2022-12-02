@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
+import com.qiniu.storage.Configuration;
 import com.qiniu.storage.UploadManager;
 import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
@@ -42,7 +43,8 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
             return null;
         }
 
-        final UploadManager uploadManager = new UploadManager(this.config.getConfiguration());
+        final Configuration config = this.config.getConfiguration();
+        final UploadManager uploadManager = new UploadManager(config);
         final Auth auth = Auth.create(this.config.getAccessKey(), this.config.getSecretKey().getPlainText());
         StringMap params = new StringMap().put("insertOnly", 1);
         if (this.config.isInfrequentStorage()) {

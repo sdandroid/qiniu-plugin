@@ -1,14 +1,9 @@
 package io.jenkins.plugins;
 
-import jenkins.util.VirtualFile;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
-
-import io.jenkins.plugins.QiniuFileSystem.InvalidPathError;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -17,11 +12,22 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
+
+import io.jenkins.plugins.QiniuFileSystem.InvalidPathError;
+import jenkins.util.VirtualFile;
+
 @Restricted(NoExternalUse.class)
 public class QiniuFile extends VirtualFile {
     private static final Logger LOG = Logger.getLogger(QiniuFile.class.getName());
 
     private String objectName;
+
+    @Nonnull
     private QiniuFileSystem qiniuFileSystem;
 
     public QiniuFile(@Nonnull final QiniuFileSystem qiniuFileSystem, final String objectName) {

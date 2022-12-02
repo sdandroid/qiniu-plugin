@@ -1,25 +1,37 @@
 package io.jenkins.plugins;
 
-import com.qiniu.storage.BucketManager;
-import com.qiniu.storage.model.FileInfo;
-import com.qiniu.storage.model.FileListing;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.StringJoiner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
+
+import com.qiniu.storage.BucketManager;
+import com.qiniu.storage.model.FileInfo;
+import com.qiniu.storage.model.FileListing;
+
 @Restricted(NoExternalUse.class)
 class QiniuFileSystem implements Serializable {
     private static final Logger LOG = Logger.getLogger(QiniuFileSystem.class.getName());
+    static final char SEPARATOR_CHAR = '/';
     static final String SEPARATOR = "/";
 
     @Nonnull

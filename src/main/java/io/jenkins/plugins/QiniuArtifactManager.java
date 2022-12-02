@@ -1,10 +1,23 @@
 package io.jenkins.plugins;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
+
 import com.qiniu.common.QiniuException;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.UploadManager;
 import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
+
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -12,16 +25,6 @@ import hudson.model.Run;
 import jenkins.model.ArtifactManager;
 import jenkins.model.StandardArtifactManager;
 import jenkins.util.VirtualFile;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
-
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Restricted(NoExternalUse.class)
 public class QiniuArtifactManager extends ArtifactManager {
