@@ -1,5 +1,18 @@
 package io.jenkins.plugins;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+
+import org.jenkinsci.Symbol;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -17,17 +30,6 @@ import hudson.tasks.Recorder;
 import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
-import org.jenkinsci.Symbol;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Restricted(NoExternalUse.class)
 public class QiniuPublisher extends Recorder implements SimpleBuildStep {
@@ -47,7 +49,7 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath filePath, @Nonnull Launcher launcher,
+    public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher,
             @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
         final PrintStream logger = taskListener.getLogger();
         final EnvVars envVars = run.getEnvironment(taskListener);
@@ -66,16 +68,16 @@ public class QiniuPublisher extends Recorder implements SimpleBuildStep {
 
         final ListFiles listFiles = new ListFiles(envVars.expand(this.includeFilesGlob),
                 envVars.expand(this.excludeFilesGlob), this.useDefaultExcludes, this.caseSensitive);
-        final Map<String, String> files = filePath.act(listFiles);
+        final Map<String, String> files = workspace.act(listFiles);
 
         if (!files.isEmpty()) {
             final QiniuArtifactManager artifactManager = (QiniuArtifactManager) run.pickArtifactManager();
             artifactManager.getMarker().useQiniuArtifactArchiver();
-            artifactManager.archive(filePath, launcher, BuildListenerAdapter.wrap(taskListener), files);
+            artifactManager.archive(workspace, launcher, BuildListenerAdapter.wrap(taskListener), files);
         } else {
             if (result == null || result.isBetterOrEqualTo(Result.UNSTABLE)) {
                 try {
-                    String msg = filePath.validateAntFileMask(this.includeFilesGlob,
+                    String msg = workspace.validateAntFileMask(this.includeFilesGlob,
                             FilePath.VALIDATE_ANT_FILE_MASK_BOUND, this.caseSensitive);
                     if (msg != null) {
                         logger.println(msg);

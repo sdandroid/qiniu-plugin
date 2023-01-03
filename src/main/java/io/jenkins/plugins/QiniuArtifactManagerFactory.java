@@ -1,10 +1,27 @@
 package io.jenkins.plugins;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.servlet.ServletException;
+
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
+
 import com.qiniu.common.QiniuException;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
+import com.qiniu.storage.Configuration.ResumableUploadAPIVersion;
 import com.qiniu.storage.Region;
 import com.qiniu.util.Auth;
+
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Run;
@@ -14,19 +31,6 @@ import jenkins.model.ArtifactManager;
 import jenkins.model.ArtifactManagerFactory;
 import jenkins.model.ArtifactManagerFactoryDescriptor;
 import jenkins.model.Jenkins;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.verb.POST;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.servlet.ServletException;
-import java.io.IOException;
-import java.net.URL;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Restricted(NoExternalUse.class)
 public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
@@ -41,8 +45,11 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
     public QiniuArtifactManagerFactory(@Nonnull String accessKey, @Nonnull final Secret secretKey,
             @Nonnull String bucketName, @Nonnull String objectNamePrefix, @Nonnull String downloadDomain,
             @Nonnull String rsDomain, @Nonnull String rsfDomain, @Nonnull String ucDomain, @Nonnull String apiDomain,
-            @Nonnull String upDomain, final boolean useHTTPs, final boolean infrequentStorage,
-            final boolean deleteArtifacts) {
+            @Nonnull String upDomain,
+            final boolean useHTTPs, final boolean infrequentStorage, final boolean deleteArtifacts,
+            int multipartUploadConcurrency, int multipartUploadPartSize,
+            int multipartUploadThreshold, int connectTimeout,
+            int readTimeout, int writeTimeout, int retryCount) {
         accessKey = Util.fixEmptyAndTrim(accessKey);
         bucketName = Util.fixEmptyAndTrim(bucketName);
         downloadDomain = Util.fixEmptyAndTrim(downloadDomain);
@@ -51,6 +58,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         rsfDomain = Util.fixEmptyAndTrim(rsfDomain);
         ucDomain = Util.fixEmptyAndTrim(ucDomain);
         apiDomain = Util.fixEmptyAndTrim(apiDomain);
+
         if (accessKey == null) {
             throw new IllegalArgumentException("accessKey must not be null or empty");
         } else if (secretKey == null || Util.fixEmptyAndTrim(secretKey.getPlainText()) == null) {
@@ -58,6 +66,49 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         } else if (bucketName == null) {
             throw new IllegalArgumentException("bucketName must not be null or empty");
         }
+
+        if (multipartUploadConcurrency == 0) {
+            multipartUploadConcurrency = 1;
+        } else if (multipartUploadConcurrency < 0) {
+            throw new IllegalArgumentException("multipartUploadConcurrency must be valid positive integer");
+        }
+
+        if (multipartUploadPartSize == 0) {
+            multipartUploadPartSize = 4;
+        } else if (multipartUploadPartSize < 0) {
+            throw new IllegalArgumentException("multipartUploadPartSize must be valid positive integer");
+        }
+
+        if (multipartUploadThreshold == 0) {
+            multipartUploadThreshold = 4;
+        } else if (multipartUploadThreshold < 0) {
+            throw new IllegalArgumentException("multipartUploadThreshold must be valid positive integer");
+        }
+
+        if (connectTimeout == 0) {
+            connectTimeout = 5;
+        } else if (connectTimeout < 0) {
+            throw new IllegalArgumentException("connectTimeout must be valid positive integer");
+        }
+
+        if (readTimeout == 0) {
+            readTimeout = 30;
+        } else if (readTimeout < 0) {
+            throw new IllegalArgumentException("readTimeout must be valid positive integer");
+        }
+
+        if (writeTimeout == 0) {
+            writeTimeout = 30;
+        } else if (writeTimeout < 0) {
+            throw new IllegalArgumentException("writeTimeout must be valid positive integer");
+        }
+
+        if (retryCount == 0) {
+            retryCount = 10;
+        } else if (retryCount < 0) {
+            throw new IllegalArgumentException("retryCount must be valid positive integer");
+        }
+
         if (upDomain == null) {
             upDomain = "";
         }
@@ -78,14 +129,17 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         }
         final QiniuConfig config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain,
                 upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs, infrequentStorage, deleteArtifacts,
-                applyForAllJobs);
+                applyForAllJobs, multipartUploadConcurrency, multipartUploadPartSize, multipartUploadThreshold,
+                connectTimeout, readTimeout, writeTimeout, retryCount);
         if (downloadDomain.isEmpty()) {
             try {
                 final String[] domainList = config.getBucketManager().domainList(config.getBucketName());
                 if (domainList.length > 0) {
                     this.config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix,
                             domainList[domainList.length - 1], upDomain, rsDomain, rsfDomain, ucDomain, apiDomain,
-                            useHTTPs, infrequentStorage, deleteArtifacts, applyForAllJobs);
+                            useHTTPs, infrequentStorage, deleteArtifacts, applyForAllJobs,
+                            multipartUploadConcurrency, multipartUploadPartSize, multipartUploadThreshold,
+                            connectTimeout, readTimeout, writeTimeout, retryCount);
                 } else {
                     throw new CannotGetDownloadDomain(
                             "Bucket " + config.getBucketName() + " are not bound with any download domain");
@@ -313,6 +367,139 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             return FormValidation.ok();
         }
 
+        @POST
+        public FormValidation doCheckMultipartUploadConcurrency(@QueryParameter String multipartUploadConcurrency)
+                throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            multipartUploadConcurrency = Util.fixEmptyAndTrim(multipartUploadConcurrency);
+            if (multipartUploadConcurrency != null) {
+                try {
+                    int num = Integer.parseInt(multipartUploadConcurrency);
+                    if (num <= 0) {
+                        throw new NumberFormatException("multipartUploadConcurrency must be positive");
+                    }
+                } catch (NumberFormatException err) {
+                    return FormValidation.error(err,
+                            Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidMultipartUploadConcurrency());
+                }
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckMultipartUploadPartSize(@QueryParameter String multipartUploadPartSize)
+                throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            multipartUploadPartSize = Util.fixEmptyAndTrim(multipartUploadPartSize);
+            if (multipartUploadPartSize != null) {
+                try {
+                    int num = Integer.parseInt(multipartUploadPartSize);
+                    if (num <= 0) {
+                        throw new NumberFormatException("multipartUploadPartSize must be positive");
+                    }
+                } catch (NumberFormatException err) {
+                    return FormValidation.error(err,
+                            Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidMultipartUploadPartSize());
+                }
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckMultipartUploadThreshold(@QueryParameter String multipartUploadThreshold)
+                throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            multipartUploadThreshold = Util.fixEmptyAndTrim(multipartUploadThreshold);
+            if (multipartUploadThreshold != null) {
+                try {
+                    int num = Integer.parseInt(multipartUploadThreshold);
+                    if (num <= 0) {
+                        throw new NumberFormatException("multipartUploadThreshold must be positive");
+                    }
+                } catch (NumberFormatException err) {
+                    return FormValidation.error(err,
+                            Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidMultipartUploadThreshold());
+                }
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckConnectTimeout(@QueryParameter String connectTimeout)
+                throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            connectTimeout = Util.fixEmptyAndTrim(connectTimeout);
+            if (connectTimeout != null) {
+                try {
+                    int num = Integer.parseInt(connectTimeout);
+                    if (num <= 0) {
+                        throw new NumberFormatException("connectTimeout must be positive");
+                    }
+                } catch (NumberFormatException err) {
+                    return FormValidation.error(err,
+                            Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidConnectTimeout());
+                }
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckReadTimeout(@QueryParameter String readTimeout)
+                throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            readTimeout = Util.fixEmptyAndTrim(readTimeout);
+            if (readTimeout != null) {
+                try {
+                    int num = Integer.parseInt(readTimeout);
+                    if (num <= 0) {
+                        throw new NumberFormatException("readTimeout must be positive");
+                    }
+                } catch (NumberFormatException err) {
+                    return FormValidation.error(err,
+                            Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidReadTimeout());
+                }
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckWriteTimeout(@QueryParameter String writeTimeout)
+                throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            writeTimeout = Util.fixEmptyAndTrim(writeTimeout);
+            if (writeTimeout != null) {
+                try {
+                    int num = Integer.parseInt(writeTimeout);
+                    if (num <= 0) {
+                        throw new NumberFormatException("writeTimeout must be positive");
+                    }
+                } catch (NumberFormatException err) {
+                    return FormValidation.error(err,
+                            Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidWriteTimeout());
+                }
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckRetryCount(@QueryParameter String retryCount)
+                throws IOException, ServletException {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+            retryCount = Util.fixEmptyAndTrim(retryCount);
+            if (retryCount != null) {
+                try {
+                    int num = Integer.parseInt(retryCount);
+                    if (num <= 0) {
+                        throw new NumberFormatException("retryCount must be positive");
+                    }
+                } catch (NumberFormatException err) {
+                    return FormValidation.error(err,
+                            Messages.QiniuArtifactManagerFactory_DescriptorImpl_errors_invalidRetryCount());
+                }
+            }
+            return FormValidation.ok();
+        }
+
         private Throwable checkAccessKeySecretKeyAndBucketName(final String accessKey, final Secret secretKey,
                 final String bucketName, final String upDomain, final String rsDomain, final String rsfDomain,
                 final String ucDomain, final String apiDomain, final boolean useHTTPs) {
@@ -400,6 +587,7 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             }
 
             final Configuration config = new Configuration();
+            config.resumableUploadAPIVersion = ResumableUploadAPIVersion.V2;
             config.useHttpsDomains = useHTTPs;
             config.region = mayCreateRegion(upDomain, rsDomain, rsfDomain, apiDomain);
             return config;
@@ -523,5 +711,33 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
 
     public boolean isApplyForAllJobs() {
         return this.config.isApplyForAllJobs();
+    }
+
+    public int getMultipartUploadConcurrency() {
+        return this.config.getMultipartUploadConcurrency();
+    }
+
+    public int getMultipartUploadPartSize() {
+        return this.config.getMultipartUploadPartSize();
+    }
+
+    public int getMultipartUploadThreshold() {
+        return this.config.getMultipartUploadThreshold();
+    }
+
+    public int getConnectTimeout() {
+        return this.config.getConnectTimeout();
+    }
+
+    public int getReadTimeout() {
+        return this.config.getReadTimeout();
+    }
+
+    public int getWriteTimeout() {
+        return this.config.getWriteTimeout();
+    }
+
+    public int getRetryCount() {
+        return this.config.getRetryCount();
     }
 }

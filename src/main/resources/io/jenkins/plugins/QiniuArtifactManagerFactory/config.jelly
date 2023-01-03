@@ -9,6 +9,13 @@
         <f:entry title="${%DownloadDomain}" field="downloadDomain"><f:textbox checkMethod="post" /></f:entry>
         <f:entry title="${%ObjectNamePrefix}" field="objectNamePrefix"><f:textbox checkMethod="post" /></f:entry>
         <f:entry title="${%UseHTTPs}" field="useHTTPs"><f:checkbox /></f:entry>
+        <f:entry title="${%MultipartUploadConcurrency}" field="multipartUploadConcurrency"><f:textbox checkMethod="post" /></f:entry>
+        <f:entry title="${%MultipartUploadPartSize}" field="multipartUploadPartSize"><f:textbox checkMethod="post" /></f:entry>
+        <f:entry title="${%MultipartUploadThreshold}" field="multipartUploadThreshold"><f:textbox checkMethod="post" /></f:entry>
+        <f:entry title="${%ConnectTimeout}" field="connectTimeout"><f:textbox checkMethod="post" /></f:entry>
+        <f:entry title="${%ReadTimeout}" field="readTimeout"><f:textbox checkMethod="post" /></f:entry>
+        <f:entry title="${%WriteTimeout}" field="writeTimeout"><f:textbox checkMethod="post" /></f:entry>
+        <f:entry title="${%RetryCount}" field="retryCount"><f:textbox checkMethod="post" /></f:entry>
         <f:section title="${%ArchiveFilesToPrivateCloud}">
             <f:entry title="${%UpDomain}" field="upDomain"><f:textbox checkMethod="post" /></f:entry>
             <f:entry title="${%UcDomain}" field="ucDomain"><f:textbox checkMethod="post" /></f:entry>
