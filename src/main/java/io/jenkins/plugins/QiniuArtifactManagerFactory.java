@@ -166,7 +166,7 @@ public final class QiniuArtifactManagerFactory extends ArtifactManagerFactory im
             }
         }
         this.config = config;
-        if (downloadDomain != "") {
+        if (!downloadDomain.isEmpty()) {
             LOG.log(Level.INFO,
                     "QiniuArtifactManagerFactory is configured: accessKey={0}, bucketName={1}, downloadDomain={2}",
                     new Object[] { accessKey, bucketName, downloadDomain });
