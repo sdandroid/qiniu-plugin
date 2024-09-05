@@ -1,24 +1,6 @@
 package io.jenkins.plugins;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.annotation.Nonnull;
-
-import org.jenkinsci.Symbol;
-import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import hudson.AbortException;
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Functions;
-import hudson.Launcher;
+import hudson.*;
 import hudson.model.AbstractProject;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -30,6 +12,17 @@ import hudson.tasks.Recorder;
 import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
+import org.jenkinsci.Symbol;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
+import org.kohsuke.stapler.DataBoundConstructor;
+
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Restricted(NoExternalUse.class)
 public final class QiniuPublisher extends Recorder implements SimpleBuildStep {
@@ -39,7 +32,7 @@ public final class QiniuPublisher extends Recorder implements SimpleBuildStep {
 
     @DataBoundConstructor
     public QiniuPublisher(@Nonnull String includeFilesGlob, @Nonnull String excludeFilesGlob, boolean allowEmptyArchive,
-            boolean onlyIfSuccessful, boolean useDefaultExcludes, boolean caseSensitive) {
+                          boolean onlyIfSuccessful, boolean useDefaultExcludes, boolean caseSensitive) {
         this.includeFilesGlob = includeFilesGlob;
         this.excludeFilesGlob = excludeFilesGlob;
         this.allowEmptyArchive = allowEmptyArchive;
@@ -50,9 +43,17 @@ public final class QiniuPublisher extends Recorder implements SimpleBuildStep {
 
     @Override
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher,
-            @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
+                        @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
         final PrintStream logger = taskListener.getLogger();
         final EnvVars envVars = run.getEnvironment(taskListener);
+//        if [[ $gitlabActionType == "MERGE" ]] && [[ $gitlabTargetBranch == "main" ]] && [[ $gitlabMergeRequestState == "merged" ]]  ;then
+        final String gitlabActionType = envVars.get("gitlabActionType");
+        final String gitlabTargetBranch = envVars.get("gitlabTargetBranch");
+        final String  gitlabMergeRequestState= envVars.get("gitlabMergeRequestState");
+
+        if(!gitlabActionType.equals("MERGE") || !gitlabTargetBranch.equals("main") || !gitlabMergeRequestState.equals("merged")){
+            return;
+        }
 
         if (this.includeFilesGlob.length() == 0) {
             throw new AbortException(Messages.QiniuPublisher_NoIncludes());
