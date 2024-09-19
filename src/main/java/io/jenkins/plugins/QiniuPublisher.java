@@ -12,6 +12,7 @@ import hudson.tasks.Recorder;
 import jenkins.model.ArtifactManagerConfiguration;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
@@ -49,10 +50,19 @@ public final class QiniuPublisher extends Recorder implements SimpleBuildStep {
 //        if [[ $gitlabActionType == "MERGE" ]] && [[ $gitlabTargetBranch == "main" ]] && [[ $gitlabMergeRequestState == "merged" ]]  ;then
         final String gitlabActionType = envVars.get("gitlabActionType");
         final String gitlabTargetBranch = envVars.get("gitlabTargetBranch");
-        final String  gitlabMergeRequestState= envVars.get("gitlabMergeRequestState");
+        final String gitlabMergeRequestState = envVars.get("gitlabMergeRequestState");
+        final String gitLabSourceBranch = envVars.get("gitLabSourceBranch");
 
-        if(!gitlabActionType.equals("MERGE") || !gitlabTargetBranch.equals("main") || !gitlabMergeRequestState.equals("merged")){
-            return;
+        if (StringUtils.isNotBlank(gitlabActionType) && StringUtils.isNotBlank(gitlabTargetBranch) && StringUtils.isNotBlank(gitlabMergeRequestState)) {
+            if (!(gitlabActionType.equals("MERGE") && gitlabTargetBranch.equals("main") && gitlabMergeRequestState.equals("merged"))) {
+                return;
+            }
+        }else {
+            if(StringUtils.isNotBlank(gitLabSourceBranch)){
+                if(!gitLabSourceBranch.equals("main")){
+                    return;
+                }
+            }
         }
 
         if (this.includeFilesGlob.length() == 0) {
